@@ -118,6 +118,8 @@ class StartJuego:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+
+
 if __name__ == "__main__":
     juego = StartJuego()
     juego.run()

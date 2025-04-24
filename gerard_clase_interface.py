@@ -1,6 +1,6 @@
 import pygame, os, sys
 # Colores
-BLACK = (0, 0, 0)
+BLACK = (48, 46, 43)
 WHITE = (255, 255, 255)
 LIGHT = (237, 237, 237)
 DARK = (59, 59, 59)
@@ -46,7 +46,6 @@ class Interface:
                 name = f"{piece}_{color}"
                 path = os.path.join("images", f"{name}.png")
                 image = pygame.image.load(path)
-                image = pygame.transform.scale(image, (SQUARE_SIZE, SQUARE_SIZE))
                 self.piece_images[name] = image
 
     def draw_pieces(self):
@@ -62,21 +61,8 @@ class Interface:
                 if image:
                     x = col * square_size + board_margin
                     y = row * square_size + board_margin
-                    image_scaled = pygame.transform.scale(image, (square_size, square_size))
+                    image_scaled = pygame.transform.smoothscale(image, (square_size, square_size))
                     self.win.blit(image_scaled, (x, y))
-
-    def update(self):
-        return
-
-
-
-
-    def main_menu(self):
-        return
-
-    def game(self):
-
-        return
 
     def draw_board(self):
         #defining position coords
@@ -94,30 +80,34 @@ class Interface:
         self.win.blit(board, (b_pos, b_pos)) # draw the board on top-left corner coords
 
     def draw_sidebar(self):
-        sdb_posx = self.win.get_size()[0]*9/16
+        #sdb_posx = self.win.get_size()[0]*9/16
         sdb_posy = self.win.get_size()[1]*self.b_margin
 
+        sdb_posx = self.win.get_size()[1]*(2*self.b_margin+self.b_size)
+         # b_margin is multiplied by 4 so it has both margins applied to the board + 20% margin between board and sidebar
+
         sdb_dimx, sdb_dimy = self.win.get_size()
-        sdb_dimx = sdb_dimx*6.5/16
+        sdb_dimx = sdb_dimx*0.975-sdb_posx
         sdb_dimy = sdb_dimy*self.b_size
 
-        sidebar=pygame.Surface((sdb_dimx, sdb_dimy), pygame.SRCALPHA)
-        sidebar.fill((0, 0, 0, 256*0.4))
-        self.round_corners(sidebar, round(self.win.get_size()[1]*0.01))
-        self.win.blit(sidebar, (sdb_posx, sdb_posy))
+        if sdb_dimx>self.win.get_size()[1]*0.1:
+            sidebar=pygame.Surface((sdb_dimx, sdb_dimy), pygame.SRCALPHA)
+            sidebar.fill((0, 0, 0, 256*0.4))
+            self.round_corners(sidebar, round(self.win.get_size()[1]*0.01))
+            self.win.blit(sidebar, (sdb_posx, sdb_posy))
 
-        # Título
-        lines = ["LET'S", "PLAY", "CHESS"]
-        for i, line in enumerate(lines):
-            text = self.font_large.render(line, True, WHITE)
-            self.win.blit(text, (sdb_posx + 50, sdb_posy + 40 + i * 80))
+            # Título
+            lines = ["LET'S", "PLAY", "CHESS"]
+            for i, line in enumerate(lines):
+                text = self.font_large.render(line, True, WHITE)
+                self.win.blit(text, (sdb_posx + 50, sdb_posy + 40 + i * 80))
 
-        # Botones
-        self.start_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 350, 200, 50)
-        self.settings_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 420, 200, 50)
+            # Botones
+            self.start_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 350, 200, 50)
+            self.settings_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 420, 200, 50)
 
-        self.draw_button(self.start_button_rect, "START", self.start_pressed)
-        self.draw_button(self.settings_button_rect, "SETTINGS", self.settings_pressed)
+            self.draw_button(self.start_button_rect, "START", self.start_pressed)
+            self.draw_button(self.settings_button_rect, "SETTINGS", self.settings_pressed)
 
     def draw_button(self, rect, text, is_pressed):
         color = TURQUOISE_DARK if is_pressed else TURQUOISE
@@ -127,13 +117,6 @@ class Interface:
         text_rect = text_surface.get_rect(center=(rect.centerx, rect.centery + offset))
         self.win.blit(text_surface, text_rect)
 
-
-        def update(self):
-            self.win.fill(BLACK)
-            self.draw_board()
-            self.draw_pieces()
-            self.draw_sidebar()
-            pygame.display.flip()
 
     def round_corners(self, img, r):
          # Create a transparent mask surface
@@ -151,6 +134,16 @@ class Interface:
         self.draw_pieces()
         self.draw_sidebar()
         pygame.display.flip()
+
+    def handle_mouse_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.start_button_rect.collidepoint(event.pos):
+                self.start_pressed = True
+                pygame.quit()
+                Juego_ajedrez().run()  # Llama al segundo juego
+                sys.exit()
+
+
 
 
 def main():
