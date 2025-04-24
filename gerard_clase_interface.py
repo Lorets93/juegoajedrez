@@ -46,7 +46,6 @@ class Interface:
                 name = f"{piece}_{color}"
                 path = os.path.join("images", f"{name}.png")
                 image = pygame.image.load(path)
-                #image = pygame.transform.scale(image, (SQUARE_SIZE, SQUARE_SIZE))
                 self.piece_images[name] = image
 
     def draw_pieces(self):
