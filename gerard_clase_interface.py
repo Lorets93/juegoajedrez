@@ -1,6 +1,6 @@
 import pygame, os, sys
 # Colores
-BLACK = (0, 0, 0)
+BLACK = (48, 46, 43)
 WHITE = (255, 255, 255)
 LIGHT = (237, 237, 237)
 DARK = (59, 59, 59)
@@ -46,7 +46,7 @@ class Interface:
                 name = f"{piece}_{color}"
                 path = os.path.join("images", f"{name}.png")
                 image = pygame.image.load(path)
-                image = pygame.transform.scale(image, (SQUARE_SIZE, SQUARE_SIZE))
+                #image = pygame.transform.scale(image, (SQUARE_SIZE, SQUARE_SIZE))
                 self.piece_images[name] = image
 
     def draw_pieces(self):
@@ -62,7 +62,7 @@ class Interface:
                 if image:
                     x = col * square_size + board_margin
                     y = row * square_size + board_margin
-                    image_scaled = pygame.transform.scale(image, (square_size, square_size))
+                    image_scaled = pygame.transform.smoothscale(image, (square_size, square_size))
                     self.win.blit(image_scaled, (x, y))
 
     def update(self):
@@ -127,13 +127,6 @@ class Interface:
         text_rect = text_surface.get_rect(center=(rect.centerx, rect.centery + offset))
         self.win.blit(text_surface, text_rect)
 
-
-        def update(self):
-            self.win.fill(BLACK)
-            self.draw_board()
-            self.draw_pieces()
-            self.draw_sidebar()
-            pygame.display.flip()
 
     def round_corners(self, img, r):
          # Create a transparent mask surface
