@@ -64,19 +64,6 @@ class Interface:
                     image_scaled = pygame.transform.smoothscale(image, (square_size, square_size))
                     self.win.blit(image_scaled, (x, y))
 
-    def update(self):
-        return
-
-
-
-
-    def main_menu(self):
-        return
-
-    def game(self):
-
-        return
-
     def draw_board(self):
         #defining position coords
         #b_x, b_y= self.win.get_size() # get window size (for any resizing)
@@ -93,30 +80,34 @@ class Interface:
         self.win.blit(board, (b_pos, b_pos)) # draw the board on top-left corner coords
 
     def draw_sidebar(self):
-        sdb_posx = self.win.get_size()[0]*9/16
+        #sdb_posx = self.win.get_size()[0]*9/16
         sdb_posy = self.win.get_size()[1]*self.b_margin
 
+        sdb_posx = self.win.get_size()[1]*(2*self.b_margin+self.b_size)
+         # b_margin is multiplied by 4 so it has both margins applied to the board + 20% margin between board and sidebar
+
         sdb_dimx, sdb_dimy = self.win.get_size()
-        sdb_dimx = sdb_dimx*6.5/16
+        sdb_dimx = sdb_dimx*0.975-sdb_posx
         sdb_dimy = sdb_dimy*self.b_size
 
-        sidebar=pygame.Surface((sdb_dimx, sdb_dimy), pygame.SRCALPHA)
-        sidebar.fill((0, 0, 0, 256*0.4))
-        self.round_corners(sidebar, round(self.win.get_size()[1]*0.01))
-        self.win.blit(sidebar, (sdb_posx, sdb_posy))
+        if sdb_dimx>self.win.get_size()[1]*0.1:
+            sidebar=pygame.Surface((sdb_dimx, sdb_dimy), pygame.SRCALPHA)
+            sidebar.fill((0, 0, 0, 256*0.4))
+            self.round_corners(sidebar, round(self.win.get_size()[1]*0.01))
+            self.win.blit(sidebar, (sdb_posx, sdb_posy))
 
-        # Título
-        lines = ["LET'S", "PLAY", "CHESS"]
-        for i, line in enumerate(lines):
-            text = self.font_large.render(line, True, WHITE)
-            self.win.blit(text, (sdb_posx + 50, sdb_posy + 40 + i * 80))
+            # Título
+            lines = ["LET'S", "PLAY", "CHESS"]
+            for i, line in enumerate(lines):
+                text = self.font_large.render(line, True, WHITE)
+                self.win.blit(text, (sdb_posx + 50, sdb_posy + 40 + i * 80))
 
-        # Botones
-        self.start_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 350, 200, 50)
-        self.settings_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 420, 200, 50)
+            # Botones
+            self.start_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 350, 200, 50)
+            self.settings_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 420, 200, 50)
 
-        self.draw_button(self.start_button_rect, "START", self.start_pressed)
-        self.draw_button(self.settings_button_rect, "SETTINGS", self.settings_pressed)
+            self.draw_button(self.start_button_rect, "START", self.start_pressed)
+            self.draw_button(self.settings_button_rect, "SETTINGS", self.settings_pressed)
 
     def draw_button(self, rect, text, is_pressed):
         color = TURQUOISE_DARK if is_pressed else TURQUOISE
