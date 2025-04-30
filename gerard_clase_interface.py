@@ -32,6 +32,7 @@ class Interface:
 
         self.start_pressed = False
         self.settings_pressed = False
+        self.font_button = pygame.font.SysFont("Arial", 28, bold=True)
 
         self.piece_images = {}
         self.load_piece_images()
@@ -106,16 +107,24 @@ class Interface:
                 text = dynamic_font.render(line, True, WHITE)
                 self.win.blit(text, (sdb_posx + sdb_dimx/3, sdb_posy + sdb_dimy*0.1 + i * font_size))
 
-            # Botones
-            b_posx=sdb_posx-self.win.get_size()[1]*0.075
-            b_posy_down, b_posy_up = self.win.get_size()[1]*0.51,self.win.get_size()[1]*0.44
-            b_dim=self.win.get_size()[1]*0.05
+            # Buttons
+            b_posx=sdb_posx-self.win.get_size()[1]*0.0875
+            b_posy_down, b_posy_up = self.win.get_size()[1]*0.51,self.win.get_size()[1]*0.42
+            b_dim=self.win.get_size()[1]*0.075
 
             self.start_button_rect = pygame.Rect(b_posx, b_posy_up, b_dim, b_dim, border_radius=self.win.get_size()[1]*0.01)
             self.settings_button_rect = pygame.Rect(b_posx, b_posy_down, b_dim, b_dim, border_radius=self.win.get_size()[1]*0.01)
 
-            self.draw_button(self.start_button_rect, ">", self.start_pressed)
-            self.draw_button(self.settings_button_rect, "o", self.settings_pressed)
+            self.draw_button(self.start_button_rect, "", self.start_pressed)
+            self.draw_button(self.settings_button_rect, "", self.settings_pressed)
+
+            # Draw image over button
+            play_img=self.piece_images.get("pawn_b")
+            settings_img=self.piece_images.get("pawn_w")
+            play_img = pygame.transform.smoothscale(play_img, (b_dim, b_dim))
+            settings_img=pygame.transform.smoothscale(settings_img, (b_dim, b_dim))
+            self.win.blit(play_img, (b_posx, b_posy_up))
+            self.win.blit(settings_img, (b_posx, b_posy_down))
 
     def draw_button(self, rect, text, is_pressed):
         color = BLACK if is_pressed else DARK
