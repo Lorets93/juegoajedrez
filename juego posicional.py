@@ -53,37 +53,7 @@ class ChessGame(Interface):
                 else:
                     print(f"⚠️ No se encontró la imagen: {image_path}. Esta pieza no se dibujará.")
 
-    def draw_board_guide(self):
-        """Dibuja una guía con las coordenadas (a1-h8) alrededor del tablero."""
-        board_margin = self.win.get_size()[1] * self.b_margin
-        board_size = self.win.get_size()[1] * self.b_size
-        square_size = board_size / 8
 
-        # Letras (a-h) en la parte superior e inferior
-        columns = ["a", "b", "c", "d", "e", "f", "g", "h"]
-        for i, col in enumerate(columns):
-            # Dibuja en la parte inferior
-            text = self.font.render(col, True, (0, 0, 0))
-            x = i * square_size + board_margin + (square_size - text.get_width()) / 2
-            y_bottom = board_margin + board_size + 5  # Espacio debajo del tablero
-            self.win.blit(text, (x, y_bottom))
-
-            # Dibuja en la parte superior
-            y_top = board_margin - square_size * 0.8  # Espacio encima del tablero
-            self.win.blit(text, (x, y_top))
-
-        # Números (1-8) en los lados izquierdo y derecho
-        rows = [str(i) for i in range(8, 0, -1)]
-        for i, row in enumerate(rows):
-            # Dibuja en el lado izquierdo
-            text = self.font.render(row, True, (0, 0, 0))
-            x_left = board_margin - text.get_width() - 5  # Espacio a la izquierda del tablero
-            y = i * square_size + board_margin + (square_size - text.get_height()) / 2
-            self.win.blit(text, (x_left, y))
-
-            # Dibuja en el lado derecho
-            x_right = board_margin + board_size + 5  # Espacio a la derecha del tablero
-            self.win.blit(text, (x_right, y))
 
     def get_square_under_mouse(self, pos):
         """Obtiene la celda (columna, fila) debajo del ratón."""
