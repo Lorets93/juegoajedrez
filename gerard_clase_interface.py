@@ -1,4 +1,8 @@
-import pygame, os, sys
+import pygame
+import os
+import sys
+import importlib
+
 # Colores
 BLACK = (48, 46, 43)
 WHITE = (255, 255, 255)
@@ -22,16 +26,14 @@ initial_positions = {
     "pawn": [(i, 1) for i in range(8)] + [(i, 6) for i in range(8)],
 }
 
-
-# Clase principal que representa la interfaz del menú inicial
 class Interface:
     def __init__(self, win):
-        self.win=win
+        self.win = win
 
-        self.b_img = pygame.image.load("images/board.png").convert_alpha() # board image
-        self.b_pos = (0, 0) # tuple - board top-left corner position
-        self.b_size = 0.9 # board size relative to window height (%)
-        self.b_margin = (1-self.b_size)/2 # board margin to window height (%)
+        self.b_img = pygame.image.load("images/board.png").convert_alpha()  # board image
+        self.b_pos = (0, 0)  # tuple - board top-left corner position
+        self.b_size = 0.9  # board size relative to window height (%)
+        self.b_margin = (1 - self.b_size) / 2  # board margin to window height (%)
 
         self.start_pressed = False
         self.settings_pressed = False
@@ -39,7 +41,7 @@ class Interface:
 
         self.piece_images = {}
         self.load_piece_images()
-    # Cargar imágenes de piezas y botones desde carpeta 'images'
+
     def load_piece_images(self):
         pieces = ["rook", "knight", "bishop", "queen", "king", "pawn"]
         colors = ["w", "b"]
@@ -50,7 +52,6 @@ class Interface:
                 image = pygame.image.load(path)
                 self.piece_images[name] = image
 
-    # Dibuja las piezas en el tablero según las posiciones iniciales
     def draw_pieces(self):
         board_margin = self.win.get_size()[1] * self.b_margin
         board_size = self.win.get_size()[1] * self.b_size
@@ -68,35 +69,30 @@ class Interface:
                     self.win.blit(image_scaled, (x, y))
 
     def draw_board(self):
-        #defining position coords
-        #b_x, b_y= self.win.get_size() # get window size (for any resizing)
-        b_pos= self.win.get_size()[1]*self.b_margin # take the percentage for the margin
+        b_pos = self.win.get_size()[1] * self.b_margin
 
-        #defining board size
-        b_dim= self.win.get_size() # get window size (for any resizing)
-        b_s = b_dim[1]*self.b_size # takes percentage of screen size, also adjusts size with ratio for it to be a square
+        b_dim = self.win.get_size()
+        b_s = b_dim[1] * self.b_size
 
-        board = pygame.transform.scale(self.b_img, (b_s, b_s))  # actual resizing of the image, with adjusted size
+        board = pygame.transform.scale(self.b_img, (b_s, b_s))
 
-        self.round_corners(board, round(self.win.get_size()[1]*0.01)) # round corners -> 1% of screen height
+        self.round_corners(board, round(self.win.get_size()[1] * 0.01))
 
-        self.win.blit(board, (b_pos, b_pos)) # draw the board on top-left corner coords
+        self.win.blit(board, (b_pos, b_pos))
 
     def draw_sidebar(self):
-        #sdb_posx = self.win.get_size()[0]*9/16
-        sdb_posy = self.win.get_size()[1]*self.b_margin
+        sdb_posy = self.win.get_size()[1] * self.b_margin
 
-        sdb_posx = self.win.get_size()[1]*(3*self.b_margin+self.b_size)
-         # b_margin is multiplied by 4 so it has both margins applied to the board + 20% margin between board and sidebar
+        sdb_posx = self.win.get_size()[1] * (3 * self.b_margin + self.b_size)
 
         sdb_dimx, sdb_dimy = self.win.get_size()
-        sdb_dimx = sdb_dimx*0.975-sdb_posx
-        sdb_dimy = sdb_dimy*self.b_size
+        sdb_dimx = sdb_dimx * 0.975 - sdb_posx
+        sdb_dimy = sdb_dimy * self.b_size
 
-        if sdb_dimx>self.win.get_size()[1]*0.1:
-            sidebar=pygame.Surface((sdb_dimx, sdb_dimy), pygame.SRCALPHA)
-            sidebar.fill((0, 0, 0, 256*0.4))
-            self.round_corners(sidebar, round(self.win.get_size()[1]*0.01))
+        if sdb_dimx > self.win.get_size()[1] * 0.1:
+            sidebar = pygame.Surface((sdb_dimx, sdb_dimy), pygame.SRCALPHA)
+            sidebar.fill((0, 0, 0, 256 * 0.4))
+            self.round_corners(sidebar, round(self.win.get_size()[1] * 0.01))
             self.win.blit(sidebar, (sdb_posx, sdb_posy))
 
             # Aumentar el tamaño de la fuente
@@ -113,21 +109,22 @@ class Interface:
                 self.win.blit(text, text_rect)
 
             # Buttons
-            b_posx=sdb_posx-self.win.get_size()[1]*0.0875
-            b_posy_down, b_posy_up = self.win.get_size()[1]*0.51,self.win.get_size()[1]*0.42
-            b_dim=self.win.get_size()[1]*0.075
+            b_posx = sdb_posx - self.win.get_size()[1] * 0.0875
+            b_posy_down, b_posy_up = self.win.get_size()[1] * 0.51, self.win.get_size()[1] * 0.42
+            b_dim = self.win.get_size()[1] * 0.075
 
-            self.start_button_rect = pygame.Rect(b_posx, b_posy_up, b_dim, b_dim, border_radius=self.win.get_size()[1]*0.01)
-            self.settings_button_rect = pygame.Rect(b_posx, b_posy_down, b_dim, b_dim, border_radius=self.win.get_size()[1]*0.01)
+            self.start_button_rect = pygame.Rect(b_posx, b_posy_up, b_dim, b_dim,
+                                                 border_radius=self.win.get_size()[1] * 0.01)
+            self.settings_button_rect = pygame.Rect(b_posx, b_posy_down, b_dim, b_dim,
+                                                    border_radius=self.win.get_size()[1] * 0.01)
 
             self.draw_button(self.start_button_rect, "", self.start_pressed)
             self.draw_button(self.settings_button_rect, "", self.settings_pressed)
 
-            # Draw image over button
-            play_img=self.piece_images.get("pawn_b")
-            settings_img=self.piece_images.get("pawn_w")
+            play_img = self.piece_images.get("pawn_b")
+            settings_img = self.piece_images.get("pawn_w")
             play_img = pygame.transform.smoothscale(play_img, (b_dim, b_dim))
-            settings_img=pygame.transform.smoothscale(settings_img, (b_dim, b_dim))
+            settings_img = pygame.transform.smoothscale(settings_img, (b_dim, b_dim))
             self.win.blit(play_img, (b_posx, b_posy_up))
             self.win.blit(settings_img, (b_posx, b_posy_down))
 
@@ -139,19 +136,11 @@ class Interface:
         text_rect = text_surface.get_rect(center=(rect.centerx, rect.centery + offset))
         self.win.blit(text_surface, text_rect)
 
-
     def round_corners(self, img, r):
-         # Create a transparent mask surface
         mask = pygame.Surface(img.get_size(), pygame.SRCALPHA)
-
-        # Draw a rounded rectangle on the mask
         pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=r)
-
-        # Apply the rounded mask to the image
         img.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
 
-
-    # Actualiza la pantalla completa
     def update(self):
         self.win.fill(BLACK)
         self.draw_board()
@@ -159,19 +148,22 @@ class Interface:
         self.draw_sidebar()
         pygame.display.flip()
 
-
-    # Maneja eventos de clic del mouse
     def handle_mouse_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.start_button_rect.collidepoint(event.pos):
                 self.start_pressed = True
                 pygame.quit()
-                Juego_ajedrez().run()  # Llama al segundo juego
+                try:
+                    # Importar módulo "juego posicional"
+                    import juego_posicional
+                    # Ejecutar función main() en juego_posicional.py
+                    juego_posicional.main()
+                except ModuleNotFoundError:
+                    print("No se pudo encontrar el archivo 'juego posicional.py'")
+                except AttributeError:
+                    print("El archivo 'juego posicional.py' no tiene función main() para ejecutar.")
                 sys.exit()
 
-
-
-# Función principal para iniciar el programa
 def main():
     pygame.init()
     win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
@@ -183,6 +175,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            interface.handle_mouse_event(event)
 
         interface.update()
 
@@ -192,5 +185,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
