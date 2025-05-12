@@ -99,17 +99,18 @@ class Interface:
             self.round_corners(sidebar, round(self.win.get_size()[1]*0.01))
             self.win.blit(sidebar, (sdb_posx, sdb_posy))
 
-            # Determine font size based on height (you can tweak the factor)
-            font_size = min(int(sdb_dimy * 0.09), int(sdb_dimx*0.12))
+            # Aumentar el tamaño de la fuente
+            font_size = min(int(sdb_dimy * 0.15), int(sdb_dimx * 0.12))  # Aumentar el factor
 
-            # Create a dynamic font
+            # Crear una fuente dinámica
             dynamic_font = pygame.font.SysFont("Arial", font_size, bold=True)
 
-            # Draw each line with the dynamic font
+            # Dibujar cada línea con la fuente dinámica
             lines = ["LET'S", "PLAY", "CHESS"]
             for i, line in enumerate(lines):
                 text = dynamic_font.render(line, True, WHITE)
-                self.win.blit(text, (sdb_posx + sdb_dimx/3, sdb_posy + sdb_dimy*0.1 + i * font_size))
+                text_rect = text.get_rect(center=(sdb_posx + sdb_dimx / 2, sdb_posy + sdb_dimy * 0.1 + i * font_size))
+                self.win.blit(text, text_rect)
 
             # Buttons
             b_posx=sdb_posx-self.win.get_size()[1]*0.0875
@@ -191,3 +192,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
