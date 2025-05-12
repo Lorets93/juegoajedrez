@@ -3,7 +3,7 @@ import pygame, os, sys
 BLACK = (48, 46, 43)
 WHITE = (255, 255, 255)
 LIGHT = (237, 237, 237)
-DARK = (59, 59, 59)
+DARK = (137, 169, 103)
 TURQUOISE = (61, 213, 168)
 TURQUOISE_DARK = (41, 173, 138)
 
@@ -21,6 +21,9 @@ initial_positions = {
     "king": [(4, 0), (4, 7)],
     "pawn": [(i, 1) for i in range(8)] + [(i, 6) for i in range(8)],
 }
+
+
+# Clase principal que representa la interfaz del menú inicial
 class Interface:
     def __init__(self, win):
         self.win=win
@@ -29,15 +32,14 @@ class Interface:
         self.b_pos = (0, 0) # tuple - board top-left corner position
         self.b_size = 0.9 # board size relative to window height (%)
         self.b_margin = (1-self.b_size)/2 # board margin to window height (%)
-        self.font_large = pygame.font.SysFont("Arial", 60, bold=True)
-        self.font_button = pygame.font.SysFont("Arial", 28, bold=True)
 
         self.start_pressed = False
         self.settings_pressed = False
+        self.font_button = pygame.font.SysFont("Arial", 28, bold=True)
 
         self.piece_images = {}
         self.load_piece_images()
-
+    # Cargar imágenes de piezas y botones desde carpeta 'images'
     def load_piece_images(self):
         pieces = ["rook", "knight", "bishop", "queen", "king", "pawn"]
         colors = ["w", "b"]
@@ -48,6 +50,7 @@ class Interface:
                 image = pygame.image.load(path)
                 self.piece_images[name] = image
 
+    # Dibuja las piezas en el tablero según las posiciones iniciales
     def draw_pieces(self):
         board_margin = self.win.get_size()[1] * self.b_margin
         board_size = self.win.get_size()[1] * self.b_size
@@ -83,7 +86,7 @@ class Interface:
         #sdb_posx = self.win.get_size()[0]*9/16
         sdb_posy = self.win.get_size()[1]*self.b_margin
 
-        sdb_posx = self.win.get_size()[1]*(2*self.b_margin+self.b_size)
+        sdb_posx = self.win.get_size()[1]*(3*self.b_margin+self.b_size)
          # b_margin is multiplied by 4 so it has both margins applied to the board + 20% margin between board and sidebar
 
         sdb_dimx, sdb_dimy = self.win.get_size()
@@ -96,21 +99,39 @@ class Interface:
             self.round_corners(sidebar, round(self.win.get_size()[1]*0.01))
             self.win.blit(sidebar, (sdb_posx, sdb_posy))
 
-            # Título
+            # Determine font size based on height (you can tweak the factor)
+            font_size = min(int(sdb_dimy * 0.09), int(sdb_dimx*0.12))
+
+            # Create a dynamic font
+            dynamic_font = pygame.font.SysFont("Arial", font_size, bold=True)
+
+            # Draw each line with the dynamic font
             lines = ["LET'S", "PLAY", "CHESS"]
             for i, line in enumerate(lines):
-                text = self.font_large.render(line, True, WHITE)
-                self.win.blit(text, (sdb_posx + 50, sdb_posy + 40 + i * 80))
+                text = dynamic_font.render(line, True, WHITE)
+                self.win.blit(text, (sdb_posx + sdb_dimx/3, sdb_posy + sdb_dimy*0.1 + i * font_size))
 
-            # Botones
-            self.start_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 350, 200, 50)
-            self.settings_button_rect = pygame.Rect(sdb_posx + 50, sdb_posy + 420, 200, 50)
+            # Buttons
+            b_posx=sdb_posx-self.win.get_size()[1]*0.0875
+            b_posy_down, b_posy_up = self.win.get_size()[1]*0.51,self.win.get_size()[1]*0.42
+            b_dim=self.win.get_size()[1]*0.075
 
-            self.draw_button(self.start_button_rect, "START", self.start_pressed)
-            self.draw_button(self.settings_button_rect, "SETTINGS", self.settings_pressed)
+            self.start_button_rect = pygame.Rect(b_posx, b_posy_up, b_dim, b_dim, border_radius=self.win.get_size()[1]*0.01)
+            self.settings_button_rect = pygame.Rect(b_posx, b_posy_down, b_dim, b_dim, border_radius=self.win.get_size()[1]*0.01)
+
+            self.draw_button(self.start_button_rect, "", self.start_pressed)
+            self.draw_button(self.settings_button_rect, "", self.settings_pressed)
+
+            # Draw image over button
+            play_img=self.piece_images.get("pawn_b")
+            settings_img=self.piece_images.get("pawn_w")
+            play_img = pygame.transform.smoothscale(play_img, (b_dim, b_dim))
+            settings_img=pygame.transform.smoothscale(settings_img, (b_dim, b_dim))
+            self.win.blit(play_img, (b_posx, b_posy_up))
+            self.win.blit(settings_img, (b_posx, b_posy_down))
 
     def draw_button(self, rect, text, is_pressed):
-        color = TURQUOISE_DARK if is_pressed else TURQUOISE
+        color = BLACK if is_pressed else DARK
         offset = 2 if is_pressed else 0
         pygame.draw.rect(self.win, color, rect, border_radius=8)
         text_surface = self.font_button.render(text, True, BLACK)
@@ -128,6 +149,8 @@ class Interface:
         # Apply the rounded mask to the image
         img.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
 
+
+    # Actualiza la pantalla completa
     def update(self):
         self.win.fill(BLACK)
         self.draw_board()
@@ -135,6 +158,8 @@ class Interface:
         self.draw_sidebar()
         pygame.display.flip()
 
+
+    # Maneja eventos de clic del mouse
     def handle_mouse_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.start_button_rect.collidepoint(event.pos):
@@ -145,7 +170,7 @@ class Interface:
 
 
 
-
+# Función principal para iniciar el programa
 def main():
     pygame.init()
     win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
