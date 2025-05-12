@@ -3,7 +3,6 @@ import pygame
 import sys
 import os  # Importamos os para manejar rutas de archivos
 
-# Diccionario inicial de ejemplo con colores asociados a las piezas (clave: "nombre_color").
 # Diccionario inicial corregido para que blancas estén abajo y negras estén arriba
 def positions_to_fen(current_positions):
     board = [["" for _ in range(8)] for _ in range(8)]
@@ -41,7 +40,7 @@ def positions_to_fen(current_positions):
     return fen_full
 
 
-# Ejemplo de uso:
+# Posiciones iniciales de piezas estándar con colores
 initial_positions = {
     "rook_w": [(0, 7), (7, 7)],
     "knight_w": [(1, 7), (6, 7)],
@@ -58,7 +57,7 @@ initial_positions = {
 }
 
 fen = positions_to_fen(initial_positions)
-print(fen)  # Resultado: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+print(fen)  # Visual check: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
 
 
@@ -67,9 +66,13 @@ class ChessGame(Interface):
         super().__init__(win)
         self.selected_piece = None
         self.selected_piece_pos = None
-        self.current_positions = initial_positions.copy()  # Copia inicial con colores
+        self.current_positions = {}
+        # Deep copy positions, to avoid mutable issues
+        for k, v in initial_positions.items():
+            self.current_positions[k] = list(v)
         self.moves_log = []  # Lista para registrar los movimientos
         self.font = pygame.font.SysFont("Arial", 22)  # Fuente para los movimientos
+        self.current_turn = "w"  # Turno inicial: blancas
 
         # Cargar imágenes de las piezas
         self.load_piece_images()
@@ -94,8 +97,6 @@ class ChessGame(Interface):
                 else:
                     print(f"⚠️ No se encontró la imagen: {image_path}. Esta pieza no se dibujará.")
 
-
-
     def get_square_under_mouse(self, pos):
         """Obtiene la celda (columna, fila) debajo del ratón."""
         board_margin = self.win.get_size()[1] * self.b_margin
@@ -110,6 +111,86 @@ class ChessGame(Interface):
             return col, row
         return None
 
+    def is_move_legal(self, piece, start_pos, end_pos):
+        """
+        Verifica si un movimiento dado es legal según las reglas básicas para peones y las reglas de turno.
+        Para simplificar, solo valida movimientos de peones correctamente, el resto se debe extender para cumplir reglas completas.
+        """
+        col_start, row_start = start_pos
+        col_end, row_end = end_pos
+
+        color = piece.split("_")[1]
+        piece_type = piece.split("_")[0]
+
+        # Impedir mover si la pieza no corresponde al turno actual
+        if color != self.current_turn:
+            print(f"⚠️ No es el turno de las piezas {color}.")
+            return False
+
+        # Movimiento fuera del tablero
+        if not (0 <= col_end < 8 and 0 <= row_end < 8):
+            return False
+
+        # Comprobar si la casilla destino tiene una pieza del mismo color (bloquea movimiento)
+        for other_piece, positions in self.current_positions.items():
+            if other_piece.split("_")[1] == color and end_pos in positions:
+                print("⚠️ No puedes mover a una casilla ocupada por tu propia pieza.")
+                return False
+
+        # Validar para peones:
+        if piece_type == "pawn":
+            direction = -1 if color == "w" else 1  # Blancas se mueven hacia filas menores (arriba), negras hacia filas mayores (abajo)
+            start_row = 6 if color == "w" else 1
+
+            # Movimiento adelante simple
+            if col_start == col_end and row_end == row_start + direction:
+                # Verificar que la casilla está libre
+                if not self.is_square_occupied(end_pos):
+                    return True
+
+            # Movimiento adelante doble desde posición inicial
+            if col_start == col_end and row_start == start_row and row_end == row_start + 2 * direction:
+                intermediate_square = (col_start, row_start + direction)
+                if not self.is_square_occupied(end_pos) and not self.is_square_occupied(intermediate_square):
+                    return True
+
+            # Captura diagonal
+            if abs(col_end - col_start) == 1 and row_end == row_start + direction:
+                if self.is_square_occupied_by_opponent(end_pos, color):
+                    return True
+
+            return False  # Movimiento inválido para peón si no cumplió ninguna condición
+
+        # Validar para otras piezas: solo permitimos movimientos de caballo (ejemplo)
+        if piece_type == "knight":
+            dc = abs(col_end - col_start)
+            dr = abs(row_end - row_start)
+            if (dc == 2 and dr == 1) or (dc == 1 and dr == 2):
+                return True
+            else:
+                return False
+
+        # Para simplificar, permitir movimientos sin reglas para otras piezas (pero se puede y debe extender)
+        # Esto es para poder hacer prueba inicial del turno y selección
+        # Se recomienda implementar las reglas para hell piezas restantes por separado
+
+        return True
+
+    def is_square_occupied(self, square):
+        """Indica si una casilla está ocupada por cualquier pieza."""
+        for positions in self.current_positions.values():
+            if square in positions:
+                return True
+        return False
+
+    def is_square_occupied_by_opponent(self, square, color):
+        """Indica si una casilla está ocupada por una pieza del oponente."""
+        opponent_color = "b" if color == "w" else "w"
+        for piece, positions in self.current_positions.items():
+            if piece.split("_")[1] == opponent_color and square in positions:
+                return True
+        return False
+
     def handle_click(self, pos):
         """Gestión del clic:
         - Selecciona una pieza en el primer clic.
@@ -120,34 +201,45 @@ class ChessGame(Interface):
             # Seleccionar la pieza que está en ese cuadrado
             if square:
                 for piece, positions in self.current_positions.items():
-                    if square in positions:
+                    if square in positions and piece.split("_")[1] == self.current_turn:
                         self.selected_piece = piece
                         self.selected_piece_pos = square
+                        print(f"Seleccionada {piece} en {self.format_square(square)}")
                         return
+            print("⚠️ No hay pieza seleccionable en esta casilla o no es tu turno.")
         else:
-            # Mover la pieza seleccionada al cuadrado destino
-            if square:
-                # Verificamos si la nueva posición ya tiene una pieza
-                overwritten_piece = None
+            # Mover la pieza seleccionada al cuadrado destino si movimiento es legal
+            if square and self.is_move_legal(self.selected_piece, self.selected_piece_pos, square):
+                # Detectar si captura pieza rival
+                pieces_to_remove = []
                 for piece, positions in self.current_positions.items():
-                    if square in positions:
-                        overwritten_piece = piece
-                        break  # Encontramos una pieza que está siendo capturada
+                    if piece != self.selected_piece and square in positions:
+                        pieces_to_remove.append(piece)
 
-                # Eliminamos la pieza que podría estar en el lugar nuevo
-                if overwritten_piece:
-                    self.current_positions[overwritten_piece].remove(square)
+                # Eliminar piezas capturadas
+                for piece_to_remove in pieces_to_remove:
+                    self.current_positions[piece_to_remove].remove(square)
+                    if not self.current_positions[piece_to_remove]:
+                        del self.current_positions[piece_to_remove]
 
-                # Movemos la pieza seleccionada a la nueva posición
+                # Mover pieza seleccionada
                 if self.selected_piece_pos in self.current_positions[self.selected_piece]:
                     self.current_positions[self.selected_piece].remove(self.selected_piece_pos)
                 self.current_positions[self.selected_piece].append(square)
 
-                # Guardar el movimiento en el registro
+                # Registrar movimiento en el log
                 move_msg = f"{self.selected_piece.upper()} de {self.format_square(self.selected_piece_pos)} a {self.format_square(square)}"
                 self.moves_log.append(move_msg)
+                print("Movimiento:", move_msg)
 
-            # Reiniciar selección
+                # Cambiar turno
+                self.current_turn = "b" if self.current_turn == "w" else "w"
+                print(f"Turno actual: {'Blancas' if self.current_turn == 'w' else 'Negras'}")
+
+            else:
+                print("⚠️ Movimiento ilegal o posición inválida.")
+
+            # Reiniciar selección siempre después del intento de mover
             self.selected_piece = None
             self.selected_piece_pos = None
 
@@ -155,9 +247,6 @@ class ChessGame(Interface):
         """Convierte un cuadrado (col, row) en notación ajedrecística (por ejemplo 'a2')."""
         col, row = square
         return f"{chr(97 + col)}{8 - row}"
-
-
-
 
     def draw_pieces(self):
         """Dibuja las piezas en el tablero."""
@@ -207,8 +296,6 @@ class ChessGame(Interface):
             # Texto en el lado derecho
             x_right = board_margin + board_size + 5  # Ajuste a la derecha del tablero
             self.win.blit(text, (x_right, y))
-
-
 
 def main():
     pygame.init()
