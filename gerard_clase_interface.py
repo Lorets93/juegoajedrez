@@ -159,9 +159,9 @@ class Interface:
                     # Ejecutar función main() en juego_posicional.py
                     juego_posicional.main()
                 except ModuleNotFoundError:
-                    print("No se pudo encontrar el archivo 'juego posicional.py'")
+                    print("No se pudo encontrar el archivo 'juego_posicional.py'")
                 except AttributeError:
-                    print("El archivo 'juego posicional.py' no tiene función main() para ejecutar.")
+                    print("El archivo 'juego_posicional.py' no tiene función main() para ejecutar.")
                 sys.exit()
 
 def main():
