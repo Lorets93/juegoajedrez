@@ -1,5 +1,5 @@
 import pygame
-import gerard_clase_interface as win
+import clase_interface as win
 
 # Constants
 WIDTH, HEIGHT = 640,360  # Board size

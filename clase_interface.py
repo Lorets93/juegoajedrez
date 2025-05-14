@@ -2,6 +2,7 @@ import pygame
 import os
 import sys
 import importlib
+import math
 
 # Colores
 BLACK = (48, 46, 43)
@@ -91,7 +92,7 @@ class Interface:
 
         if sdb_dimx > self.win.get_size()[1] * 0.1:
             sidebar = pygame.Surface((sdb_dimx, sdb_dimy), pygame.SRCALPHA)
-            sidebar.fill((0, 0, 0, 256 * 0.4))
+            sidebar.fill((0, 0, 0, int(256 * 0.4)))
             self.round_corners(sidebar, round(self.win.get_size()[1] * 0.01))
             self.win.blit(sidebar, (sdb_posx, sdb_posy))
 
@@ -121,20 +122,43 @@ class Interface:
             self.draw_button(self.start_button_rect, "", self.start_pressed)
             self.draw_button(self.settings_button_rect, "", self.settings_pressed)
 
-            play_img = self.piece_images.get("pawn_w")
-            settings_img = self.piece_images.get("pawn_w")
-            play_img = pygame.transform.smoothscale(play_img, (b_dim, b_dim))
-            settings_img = pygame.transform.smoothscale(settings_img, (b_dim, b_dim))
-            self.win.blit(play_img, (b_posx, b_posy_up))
-            self.win.blit(settings_img, (b_posx, b_posy_down))
+            # Dibujar triángulo de "play" en el botón de inicio
+            self.draw_play_icon(self.start_button_rect)
+
+            # Dibujar texto "Settings" en el botón de configuración, ajustado al espacio
+            self.draw_settings_text(self.settings_button_rect)
 
     def draw_button(self, rect, text, is_pressed):
         color = BLACK if is_pressed else DARK
         offset = 2 if is_pressed else 0
         pygame.draw.rect(self.win, color, rect, border_radius=8)
-        text_surface = self.font_button.render(text, True, BLACK)
-        text_rect = text_surface.get_rect(center=(rect.centerx, rect.centery + offset))
-        self.win.blit(text_surface, text_rect)
+        if text:
+            text_surface = self.font_button.render(text, True, BLACK)
+            text_rect = text_surface.get_rect(center=(rect.centerx, rect.centery + offset))
+            self.win.blit(text_surface, text_rect)
+
+    def draw_play_icon(self, rect):
+        # Dibujar un triángulo apuntando a la derecha (símbolo play)
+        padding = rect.width * 0.25
+        point1 = (rect.left + padding, rect.top + padding)
+        point2 = (rect.left + padding, rect.bottom - padding)
+        point3 = (rect.right - padding, rect.top + rect.height / 2)
+        pygame.draw.polygon(self.win, WHITE, [point1, point2, point3])
+
+    def draw_settings_text(self, rect):
+        # Dibujar el texto "Setting" adaptado al área del botón para que quepa bien
+        font_size = int(rect.height * 0.5)
+        font = pygame.font.SysFont("Arial", font_size, bold=True)
+        text = font.render("Settings", True, WHITE)
+        text_rect = text.get_rect(center=rect.center)
+        # Escalar texto si no cabe en el botón
+        if text_rect.width > rect.width:
+            scale_factor = rect.width / text_rect.width
+            font_size = max(int(font_size * scale_factor), 10)
+            font = pygame.font.SysFont("Arial", font_size, bold=True)
+            text = font.render("Settings", True, WHITE)
+            text_rect = text.get_rect(center=rect.center)
+        self.win.blit(text, text_rect)
 
     def round_corners(self, img, r):
         mask = pygame.Surface(img.get_size(), pygame.SRCALPHA)
@@ -185,6 +209,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
 
 
 
