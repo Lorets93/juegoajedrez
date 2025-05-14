@@ -1,4 +1,4 @@
-from gerard_clase_interface import Interface, SCREEN_WIDTH, SCREEN_HEIGHT
+from clase_interface import Interface, SCREEN_WIDTH, SCREEN_HEIGHT
 import pygame
 import sys
 import os  # Importamos os para manejar rutas de archivos
