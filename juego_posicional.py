@@ -1,46 +1,25 @@
-from clase_interface import Interface, SCREEN_WIDTH, SCREEN_HEIGHT
 import pygame
 import sys
-import os  # Importamos os para manejar rutas de archivos
 
-# Diccionario inicial corregido para que blancas estén abajo y negras estén arriba
-def positions_to_fen(current_positions):
-    board = [["" for _ in range(8)] for _ in range(8)]
+# Colores
+BLACK = (48, 46, 43)
+WHITE = (255, 255, 255)
+LIGHT_GREEN = (144, 238, 144)  # Clarito para iluminacion y claro en casillas
+DARK_GREEN = (0, 128, 0)  # Oscuro para casillas
+BUTTON_BG = (30, 90, 60)
+BUTTON_BG_PRESSED = (20, 60, 40)
+SIDEBAR_BG = (25, 50, 35)
+TEXT_COLOR = (230, 230, 230)
 
-    # Asigna las piezas en el tablero
-    for piece, positions in current_positions.items():
-        for col, row in positions:
-            symbol = piece.split("_")[0][0]  # Primer carácter del nombre de la pieza (e.g., 'r' para 'rook')
-            color = piece.split("_")[1]  # Color (w o b)
-            board[row][col] = symbol.upper() if color == "w" else symbol.lower()
+# Tamaños
+SCREEN_WIDTH = 900
+SCREEN_HEIGHT = 600
 
-    # Construye la cadena FEN
-    fen_rows = []
-    for row in board:
-        empty_count = 0
-        row_result = ""
-        for cell in row:
-            if cell == "":
-                empty_count += 1
-            else:
-                if empty_count > 0:
-                    row_result += str(empty_count)
-                    empty_count = 0
-                row_result += cell
-        if empty_count > 0:
-            row_result += str(empty_count)
-        fen_rows.append(row_result)
+# Board parameters
+BOARD_SIZE_RATIO = 0.9  # Board height relative to window height
+BOARD_MARGIN_RATIO = (1 - BOARD_SIZE_RATIO) / 2
 
-    # Une las filas con '/'
-    fen_board = "/".join(fen_rows)
-
-    # Añade información adicional (turno, enroques, etc., por ahora simulamos con valores por defecto)
-    fen_full = fen_board + " w KQkq - 0 1"
-
-    return fen_full
-
-
-# Posiciones iniciales de piezas estándar con colores
+# Posiciones iniciales (como en original)
 initial_positions = {
     "rook_w": [(0, 7), (7, 7)],
     "knight_w": [(1, 7), (6, 7)],
@@ -56,260 +35,404 @@ initial_positions = {
     "pawn_b": [(col, 1) for col in range(8)],
 }
 
-fen = positions_to_fen(initial_positions)
-print(fen)  # Visual check: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+
+class Piece:
+    def __init__(self, name, color):
+        self.name = name
+        self.color = color
+        self.image = pygame.image.load(f"images/{name}_{color}.png")
+
+    def get_moves(self, pos, board):
+        raise NotImplementedError()
 
 
+class Pawn(Piece):
+    def get_moves(self, pos, board):
+        moves = []
+        col, row = pos
+        direction = -1 if self.color == "w" else 1
+        start_row = 6 if self.color == "w" else 1
 
-class ChessGame(Interface):
-    def __init__(self, win):
-        super().__init__(win)
-        self.selected_piece = None
-        self.selected_piece_pos = None
+        forward = (col, row + direction)
+        if board.is_square_empty(forward):
+            moves.append(forward)
+            double_forward = (col, row + 2 * direction)
+            if row == start_row and board.is_square_empty(double_forward):
+                moves.append(double_forward)
+
+        for dc in [-1, 1]:
+            diag = (col + dc, row + direction)
+            if 0 <= diag[0] < 8 and 0 <= diag[1] < 8:
+                if board.is_square_occupied_by_opponent(diag, self.color):
+                    moves.append(diag)
+
+        return moves
+
+
+class Knight(Piece):
+    def get_moves(self, pos, board):
+        moves = []
+        col, row = pos
+        offsets = [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]
+        for dc, dr in offsets:
+            new_col, new_row = col + dc, row + dr
+            if 0 <= new_col < 8 and 0 <= new_row < 8:
+                if board.is_square_empty((new_col, new_row)) or board.is_square_occupied_by_opponent((new_col, new_row),
+                                                                                                     self.color):
+                    moves.append((new_col, new_row))
+        return moves
+
+
+class Bishop(Piece):
+    def get_moves(self, pos, board):
+        moves = []
+        col, row = pos
+        directions = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+        for dc, dr in directions:
+            for i in range(1, 8):
+                new_col, new_row = col + dc * i, row + dr * i
+                if 0 <= new_col < 8 and 0 <= new_row < 8:
+                    if board.is_square_empty((new_col, new_row)):
+                        moves.append((new_col, new_row))
+                    elif board.is_square_occupied_by_opponent((new_col, new_row), self.color):
+                        moves.append((new_col, new_row))
+                        break
+                    else:
+                        break
+                else:
+                    break
+        return moves
+
+
+class Rook(Piece):
+    def get_moves(self, pos, board):
+        moves = []
+        col, row = pos
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        for dc, dr in directions:
+            for i in range(1, 8):
+                new_col, new_row = col + dc * i, row + dr * i
+                if 0 <= new_col < 8 and 0 <= new_row < 8:
+                    if board.is_square_empty((new_col, new_row)):
+                        moves.append((new_col, new_row))
+                    elif board.is_square_occupied_by_opponent((new_col, new_row), self.color):
+                        moves.append((new_col, new_row))
+                        break
+                    else:
+                        break
+                else:
+                    break
+        return moves
+
+
+class Queen(Piece):
+    def get_moves(self, pos, board):
+        moves = []
+        col, row = pos
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1),
+                      (1, 1), (1, -1), (-1, 1), (-1, -1)]
+        for dc, dr in directions:
+            for i in range(1, 8):
+                new_col, new_row = col + dc * i, row + dr * i
+                if 0 <= new_col < 8 and 0 <= new_row < 8:
+                    if board.is_square_empty((new_col, new_row)):
+                        moves.append((new_col, new_row))
+                    elif board.is_square_occupied_by_opponent((new_col, new_row), self.color):
+                        moves.append((new_col, new_row))
+                        break
+                    else:
+                        break
+                else:
+                    break
+        return moves
+
+
+class King(Piece):
+    def get_moves(self, pos, board):
+        moves = []
+        col, row = pos
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1),
+                      (1, 1), (1, -1), (-1, 1), (-1, -1)]
+        for dc, dr in directions:
+            new_col, new_row = col + dc, row + dr
+            if 0 <= new_col < 8 and 0 <= new_row < 8:
+                if board.is_square_empty((new_col, new_row)) or board.is_square_occupied_by_opponent((new_col, new_row),
+                                                                                                     self.color):
+                    moves.append((new_col, new_row))
+        return moves
+
+
+class Board:
+    def __init__(self):
         self.current_positions = {}
-        # Deep copy positions, to avoid mutable issues
         for k, v in initial_positions.items():
             self.current_positions[k] = list(v)
-        self.moves_log = []  # Lista para registrar los movimientos
-        self.font = pygame.font.SysFont("Arial", 22)  # Fuente para los movimientos
-        self.current_turn = "w"  # Turno inicial: blancas
 
-        # Cargar imágenes de las piezas
-        self.load_piece_images()
+    def is_square_empty(self, square):
+        for positions in self.current_positions.values():
+            if square in positions:
+                return False
+        return True
 
-        # Barra lateral
-        self.r_margin = 0.75  # Margen derecho donde comienza la barra lateral
-        self.sbar_width = 0.25  # Ancho de la barra lateral
+    def is_square_occupied_by_opponent(self, square, color):
+        opponent = "b" if color == "w" else "w"
+        for piece, positions in self.current_positions.items():
+            if piece.endswith(f"_{opponent}") and square in positions:
+                return True
+        return False
 
-    def load_piece_images(self):
-        """
-        Carga las imágenes de las piezas con base en el nuevo formato ('pawn_w.png', etc.).
-        """
-        pieces = ["king", "queen", "rook", "bishop", "knight", "pawn"]  # Rey, Reina, Torre, Alfil, Caballo, Peón
-        colors = ["w", "b"]  # Blanco (white) y negro (black)
+    def move_piece(self, piece_key, start_pos, end_pos):
+        # Captura
+        for p, pos_list in list(self.current_positions.items()):
+            if p != piece_key and end_pos in pos_list:
+                pos_list.remove(end_pos)
+                if not pos_list:
+                    del self.current_positions[p]
+        # Mover pieza
+        if start_pos in self.current_positions[piece_key]:
+            self.current_positions[piece_key].remove(start_pos)
+        self.current_positions[piece_key].append(end_pos)
 
-        self.piece_images = {}
-        for piece in pieces:
-            for color in colors:
-                image_path = f"images/{piece}_{color}.png"  # Formato de nombres: p.ej. 'pawn_w.png'
-                if os.path.exists(image_path):  # Verificar si la ruta existe
-                    self.piece_images[f"{piece}_{color}"] = pygame.image.load(image_path)
-                else:
-                    print(f"⚠️ No se encontró la imagen: {image_path}. Esta pieza no se dibujará.")
+
+# Helper to convert position to chess notation
+def pos_to_notation(pos):
+    col_to_file = 'abcdefgh'
+    col, row = pos
+    return f"{col_to_file[col]}{8 - row}"
+
+
+class ChessGame:
+    def __init__(self, win):
+        self.win = win
+        self.board = Board()
+        self.font = pygame.font.SysFont("Arial", 18)
+        self.selected_piece = None
+        self.selected_pos = None
+        self.piece_objects = self.load_piece_objects()
+        self.current_turn = "w"
+        self.b_margin = BOARD_MARGIN_RATIO
+        self.b_size = BOARD_SIZE_RATIO
+        self.move_log = []
+
+        # Load board image for new draw_board
+        self.b_img = pygame.image.load("images/board.png").convert_alpha()
+
+        # Sidebar elements
+        self.sidebar_width = int(self.win.get_size()[0] - (
+                    self.win.get_size()[1] * self.b_size + self.win.get_size()[1] * self.b_margin * 3))
+        self.sidebar_rect = pygame.Rect(
+            self.win.get_size()[1] * (3 * self.b_margin + self.b_size) + self.win.get_size()[1] * self.b_margin,
+            self.win.get_size()[1] * self.b_margin,
+            self.sidebar_width,
+            self.win.get_size()[1] * self.b_size)
+
+        bh = self.win.get_size()[1] * 0.075
+        bw = bh
+        bx = self.sidebar_rect.left - self.win.get_size()[1] * 0.0875
+        by1 = self.win.get_size()[1] * 0.42
+        by2 = self.win.get_size()[1] * 0.51
+        self.start_button_rect = pygame.Rect(bx, by1, bw, bh)
+        self.settings_button_rect = pygame.Rect(bx, by2, bw, bh)
+
+        self.start_pressed = False
+        self.settings_pressed = False
+
+    def load_piece_objects(self):
+        objs = {}
+        class_map = {
+            "pawn": Pawn,
+            "knight": Knight,
+            "bishop": Bishop,
+            "rook": Rook,
+            "queen": Queen,
+            "king": King,
+        }
+        for piece_key in self.board.current_positions.keys():
+            name, color = piece_key.split("_")
+            cls = class_map.get(name, Piece)
+            objs[piece_key] = cls(name, color)
+        return objs
 
     def get_square_under_mouse(self, pos):
-        """Obtiene la celda (columna, fila) debajo del ratón."""
         board_margin = self.win.get_size()[1] * self.b_margin
         board_size = self.win.get_size()[1] * self.b_size
         square_size = board_size / 8
-
         x, y = pos
         col = int((x - board_margin) // square_size)
         row = int((y - board_margin) // square_size)
-
         if 0 <= col < 8 and 0 <= row < 8:
-            return col, row
+            return (col, row)
         return None
 
-    def is_move_legal(self, piece, start_pos, end_pos):
-        """
-        Verifica si un movimiento dado es legal según las reglas básicas para peones y las reglas de turno.
-        Para simplificar, solo valida movimientos de peones correctamente, el resto se debe extender para cumplir reglas completas.
-        """
-        col_start, row_start = start_pos
-        col_end, row_end = end_pos
+    def round_corners(self, img, r):
+        mask = pygame.Surface(img.get_size(), pygame.SRCALPHA)
+        pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=r)
+        img.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
 
-        color = piece.split("_")[1]
-        piece_type = piece.split("_")[0]
+    # Replaced draw_board method per user request
+    def draw_board(self):
+        b_pos = self.win.get_size()[1] * self.b_margin
 
-        # Impedir mover si la pieza no corresponde al turno actual
-        if color != self.current_turn:
-            print(f"⚠️ No es el turno de las piezas {color}.")
-            return False
+        b_dim = self.win.get_size()
+        b_s = int(b_dim[1] * self.b_size)
 
-        # Movimiento fuera del tablero
-        if not (0 <= col_end < 8 and 0 <= row_end < 8):
-            return False
+        board = pygame.transform.smoothscale(self.b_img, (b_s, b_s))
 
-        # Comprobar si la casilla destino tiene una pieza del mismo color (bloquea movimiento)
-        for other_piece, positions in self.current_positions.items():
-            if other_piece.split("_")[1] == color and end_pos in positions:
-                print("⚠️ No puedes mover a una casilla ocupada por tu propia pieza.")
-                return False
+        self.round_corners(board, round(self.win.get_size()[1] * 0.01))
 
-        # Validar para peones:
-        if piece_type == "pawn":
-            direction = -1 if color == "w" else 1  # Blancas se mueven hacia filas menores (arriba), negras hacia filas mayores (abajo)
-            start_row = 6 if color == "w" else 1
+        self.win.blit(board, (b_pos, b_pos))
 
-            # Movimiento adelante simple
-            if col_start == col_end and row_end == row_start + direction:
-                # Verificar que la casilla está libre
-                if not self.is_square_occupied(end_pos):
-                    return True
-
-            # Movimiento adelante doble desde posición inicial
-            if col_start == col_end and row_start == start_row and row_end == row_start + 2 * direction:
-                intermediate_square = (col_start, row_start + direction)
-                if not self.is_square_occupied(end_pos) and not self.is_square_occupied(intermediate_square):
-                    return True
-
-            # Captura diagonal
-            if abs(col_end - col_start) == 1 and row_end == row_start + direction:
-                if self.is_square_occupied_by_opponent(end_pos, color):
-                    return True
-
-            return False  # Movimiento inválido para peón si no cumplió ninguna condición
-
-        # Validar para otras piezas: solo permitimos movimientos de caballo (ejemplo)
-        if piece_type == "knight":
-            dc = abs(col_end - col_start)
-            dr = abs(row_end - row_start)
-            if (dc == 2 and dr == 1) or (dc == 1 and dr == 2):
-                return True
-            else:
-                return False
-
-        # Para simplificar, permitir movimientos sin reglas para otras piezas (pero se puede y debe extender)
-        # Esto es para poder hacer prueba inicial del turno y selección
-        # Se recomienda implementar las reglas para hell piezas restantes por separado
-
-        return True
-
-    def is_square_occupied(self, square):
-        """Indica si una casilla está ocupada por cualquier pieza."""
-        for positions in self.current_positions.values():
-            if square in positions:
-                return True
-        return False
-
-    def is_square_occupied_by_opponent(self, square, color):
-        """Indica si una casilla está ocupada por una pieza del oponente."""
-        opponent_color = "b" if color == "w" else "w"
-        for piece, positions in self.current_positions.items():
-            if piece.split("_")[1] == opponent_color and square in positions:
-                return True
-        return False
-
-    def handle_click(self, pos):
-        """Gestión del clic:
-        - Selecciona una pieza en el primer clic.
-        - Mueve la pieza con el segundo clic."""
-        square = self.get_square_under_mouse(pos)
-
-        if self.selected_piece is None:
-            # Seleccionar la pieza que está en ese cuadrado
-            if square:
-                for piece, positions in self.current_positions.items():
-                    if square in positions and piece.split("_")[1] == self.current_turn:
-                        self.selected_piece = piece
-                        self.selected_piece_pos = square
-                        print(f"Seleccionada {piece} en {self.format_square(square)}")
-                        return
-            print("⚠️ No hay pieza seleccionable en esta casilla o no es tu turno.")
-        else:
-            # Mover la pieza seleccionada al cuadrado destino si movimiento es legal
-            if square and self.is_move_legal(self.selected_piece, self.selected_piece_pos, square):
-                # Detectar si captura pieza rival
-                pieces_to_remove = []
-                for piece, positions in self.current_positions.items():
-                    if piece != self.selected_piece and square in positions:
-                        pieces_to_remove.append(piece)
-
-                # Eliminar piezas capturadas
-                for piece_to_remove in pieces_to_remove:
-                    self.current_positions[piece_to_remove].remove(square)
-                    if not self.current_positions[piece_to_remove]:
-                        del self.current_positions[piece_to_remove]
-
-                # Mover pieza seleccionada
-                if self.selected_piece_pos in self.current_positions[self.selected_piece]:
-                    self.current_positions[self.selected_piece].remove(self.selected_piece_pos)
-                self.current_positions[self.selected_piece].append(square)
-
-                # Registrar movimiento en el log
-                move_msg = f"{self.selected_piece.upper()} de {self.format_square(self.selected_piece_pos)} a {self.format_square(square)}"
-                self.moves_log.append(move_msg)
-                print("Movimiento:", move_msg)
-
-                # Cambiar turno
-                self.current_turn = "b" if self.current_turn == "w" else "w"
-                print(f"Turno actual: {'Blancas' if self.current_turn == 'w' else 'Negras'}")
-
-            else:
-                print("⚠️ Movimiento ilegal o posición inválida.")
-
-            # Reiniciar selección siempre después del intento de mover
-            self.selected_piece = None
-            self.selected_piece_pos = None
-
-    def format_square(self, square):
-        """Convierte un cuadrado (col, row) en notación ajedrecística (por ejemplo 'a2')."""
-        col, row = square
-        return f"{chr(97 + col)}{8 - row}"
-
-    def draw_pieces(self):
-        """Dibuja las piezas en el tablero."""
+    def draw_legal_moves_highlights(self):
+        # Highlight squares for legal moves of selected piece
+        if not self.selected_piece or not self.selected_pos:
+            return
+        piece_obj = self.piece_objects.get(self.selected_piece)
+        if not piece_obj:
+            return
+        legal_moves = piece_obj.get_moves(self.selected_pos, self.board)
+        if not legal_moves:
+            return
         board_margin = self.win.get_size()[1] * self.b_margin
         board_size = self.win.get_size()[1] * self.b_size
         square_size = board_size / 8
+        overlay = pygame.Surface((int(square_size), int(square_size)), pygame.SRCALPHA)
+        overlay.fill((144, 238, 144, 100))  # translucent light green
 
-        for piece, positions in self.current_positions.items():
-            for col, row in positions:
-                image = self.piece_images.get(piece)
-                if image:
-                    x = col * square_size + board_margin
-                    y = row * square_size + board_margin
-                    image_scaled = pygame.transform.smoothscale(image, (int(square_size), int(square_size)))
-                    self.win.blit(image_scaled, (x, y))
-                else:
-                    print(f"⚠️ Imagen no encontrada para: {piece}")
+        for move in legal_moves:
+            c, r = move
+            pos_x = int(board_margin + c * square_size)
+            pos_y = int(board_margin + r * square_size)
+            self.win.blit(overlay, (pos_x, pos_y))
 
-    def draw_board_guide(self):
-        """Dibuja una guía con las coordenadas (a1-h8) alrededor del tablero con texto blanco."""
-        board_margin = self.win.get_size()[1] * self.b_margin  # Margen del tablero
-        board_size = self.win.get_size()[1] * self.b_size  # Tamaño del tablero
-        square_size = board_size / 8  # Tamaño por casilla de tablero
+    def draw_pieces(self):
+        margin = self.win.get_size()[1] * self.b_margin
+        size = self.win.get_size()[1] * self.b_size
+        square_size = size / 8
 
-        # Letras (a-h) en la parte superior e inferior
-        columns = ["a", "b", "c", "d", "e", "f", "g", "h"]
-        for i, col in enumerate(columns):
-            # Texto en la parte inferior
-            text = self.font.render(col, True, (255, 255, 255))  # Texto en blanco
-            x = i * square_size + board_margin + (square_size - text.get_width()) / 2
-            y_bottom = board_margin + board_size + 5  # Ajuste debajo del tablero
-            self.win.blit(text, (x, y_bottom))
+        for piece_key, positions in self.board.current_positions.items():
+            piece_obj = self.piece_objects.get(piece_key)
+            if not piece_obj:
+                continue
+            for pos in positions:
+                col, row = pos
+                img = pygame.transform.smoothscale(piece_obj.image, (int(square_size), int(square_size)))
+                self.win.blit(img, (margin + col * square_size, margin + row * square_size))
 
-            # Texto en la parte superior
-            y_top = board_margin - square_size * 0.8  # Ajuste encima del tablero
-            self.win.blit(text, (x, y_top))
+    def draw_sidebar(self):
+        pygame.draw.rect(self.win, SIDEBAR_BG, self.sidebar_rect, border_radius=8)
 
-        # Números (1-8) en los lados izquierdo y derecho
-        rows = [str(i) for i in range(8, 0, -1)]  # Notación estándar de ajedrez (8 a 1)
-        for i, row in enumerate(rows):
-            # Texto en el lado izquierdo
-            text = self.font.render(row, True, (255, 255, 255))  # Texto en blanco
-            x_left = board_margin - text.get_width() - 5  # Ajuste a la izquierda del tablero
-            y = i * square_size + board_margin + (square_size - text.get_height()) / 2
-            self.win.blit(text, (x_left, y))
+        font_title = pygame.font.SysFont("Arial", 32, bold=True)
+        text_title = font_title.render("CHESS", True, TEXT_COLOR)
+        title_rect = text_title.get_rect(center=(self.sidebar_rect.centerx, self.sidebar_rect.top + 40))
+        self.win.blit(text_title, title_rect)
 
-            # Texto en el lado derecho
-            x_right = board_margin + board_size + 5  # Ajuste a la derecha del tablero
-            self.win.blit(text, (x_right, y))
+        font_move = pygame.font.SysFont("Arial", 18)
+        moves_start_y = title_rect.bottom + 20
+        max_moves_to_show = int((self.sidebar_rect.height - (moves_start_y - self.sidebar_rect.top) - 100) / 22)
+        displayed_moves = self.move_log[-max_moves_to_show:]
+
+        y = moves_start_y
+        for i, move in enumerate(displayed_moves, start=len(self.move_log) - len(displayed_moves) + 1):
+            move_text = f"{i}. {move}"
+            text_surf = font_move.render(move_text, True, TEXT_COLOR)
+            self.win.blit(text_surf, (self.sidebar_rect.left + 20, y))
+            y += 22
+
+        self.draw_button(self.start_button_rect, self.start_pressed, "Play")
+        self.draw_button(self.settings_button_rect, self.settings_pressed, "Settings")
+
+    def draw_button(self, rect, pressed, label):
+        color = BUTTON_BG_PRESSED if pressed else BUTTON_BG
+        pygame.draw.rect(self.win, color, rect, border_radius=8)
+        font = pygame.font.SysFont("Arial", 20, bold=True)
+        text = font.render(label, True, TEXT_COLOR)
+        text_rect = text.get_rect(center=rect.center)
+        self.win.blit(text, text_rect)
+
+    def handle_click(self, pos):
+        if self.start_button_rect.collidepoint(pos):
+            self.start_pressed = True
+            self.reset_game()
+            return
+        elif self.settings_button_rect.collidepoint(pos):
+            self.settings_pressed = True
+            return
+
+        sq = self.get_square_under_mouse(pos)
+        if not sq:
+            self.selected_piece = None
+            self.selected_pos = None
+            return
+
+        if not self.selected_piece:
+            for piece_key, positions in self.board.current_positions.items():
+                if sq in positions and piece_key.endswith(f"_{self.current_turn}"):
+                    self.selected_piece = piece_key
+                    self.selected_pos = sq
+                    break
+        else:
+            piece_obj = self.piece_objects.get(self.selected_piece)
+            moves = piece_obj.get_moves(self.selected_pos, self.board)
+            if sq in moves:
+                start_not = pos_to_notation(self.selected_pos)
+                end_not = pos_to_notation(sq)
+                move_str = f"{start_not} -> {end_not}"
+                self.board.move_piece(self.selected_piece, self.selected_pos, sq)
+                self.move_log.append(move_str)
+                self.current_turn = "b" if self.current_turn == "w" else "w"
+            self.selected_piece = None
+            self.selected_pos = None
+
+    def reset_game(self):
+        self.board = Board()
+        self.piece_objects = self.load_piece_objects()
+        self.current_turn = "w"
+        self.move_log.clear()
+        self.selected_piece = None
+        self.selected_pos = None
+        self.start_pressed = False
+        self.settings_pressed = False
+
+    def update(self):
+        self.win.fill(BLACK)
+        self.draw_board()
+        self.draw_legal_moves_highlights()  # Draw highlights on top of board but below pieces
+        self.draw_pieces()
+        self.draw_sidebar()
+        pygame.display.flip()
+
 
 def main():
     pygame.init()
     win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
-    pygame.display.set_caption("Chess Game")
+    pygame.display.set_caption("Chess Game with Sidebar")
     game = ChessGame(win)
+    clock = pygame.time.Clock()
 
     running = True
     while running:
+        clock.tick(60)  # 60 FPS
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 game.handle_click(event.pos)
+            elif event.type == pygame.VIDEORESIZE:
+                game.sidebar_width = int(
+                    win.get_size()[0] - (win.get_size()[1] * game.b_size + win.get_size()[1] * game.b_margin * 3))
+                game.sidebar_rect = pygame.Rect(
+                    win.get_size()[1] * (3 * game.b_margin + game.b_size) + win.get_size()[1] * game.b_margin,
+                    win.get_size()[1] * game.b_margin,
+                    game.sidebar_width,
+                    win.get_size()[1] * game.b_size)
+                bh = win.get_size()[1] * 0.075
+                bw = bh
+                bx = game.sidebar_rect.left - win.get_size()[1] * 0.0875
+                by1 = win.get_size()[1] * 0.42
+                by2 = win.get_size()[1] * 0.51
+                game.start_button_rect = pygame.Rect(bx, by1, bw, bh)
+                game.settings_button_rect = pygame.Rect(bx, by2, bw, bh)
 
         game.update()
 
@@ -319,3 +442,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
+
+
