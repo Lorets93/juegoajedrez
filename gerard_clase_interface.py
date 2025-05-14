@@ -121,7 +121,7 @@ class Interface:
             self.draw_button(self.start_button_rect, "", self.start_pressed)
             self.draw_button(self.settings_button_rect, "", self.settings_pressed)
 
-            play_img = self.piece_images.get("play_button")
+            play_img = self.piece_images.get("pawn_w")
             settings_img = self.piece_images.get("pawn_w")
             play_img = pygame.transform.smoothscale(play_img, (b_dim, b_dim))
             settings_img = pygame.transform.smoothscale(settings_img, (b_dim, b_dim))
