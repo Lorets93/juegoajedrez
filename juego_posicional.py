@@ -236,9 +236,9 @@ class ChessView:
         self.win.blit(board, (margin, margin))
 
     def draw_pieces(self, current_positions, piece_objects):
-        h = self.win.get_size()[1]
-        margin = h * self.b_margin
-        square_size = (h * self.b_size) / 8
+        h = self.win.get_size()[1]#
+        margin = h * self.b_margin#
+        square_size = (h * self.b_size) / 8#
 
         for piece_key, positions in current_positions.items():
             piece_obj = piece_objects.get(piece_key)

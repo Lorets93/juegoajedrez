@@ -3,6 +3,7 @@ import os
 import sys
 import importlib
 import math
+import juego_posicional
 
 # Colores
 BLACK = (48, 46, 43)
@@ -53,16 +54,16 @@ class Interface:
                 image = pygame.image.load(path)
                 self.piece_images[name] = image
 
-    def draw_pieces(self):
+    def draw_pieces(self, positions):
         board_margin = self.win.get_size()[1] * self.b_margin
         board_size = self.win.get_size()[1] * self.b_size
         square_size = board_size / 8
 
-        for piece, positions in initial_positions.items():
+        for piece, positions in positions.items():
             for col, row in positions:
-                color = "b" if row < 2 else "w"
-                name = f"{piece}_{color}"
-                image = self.piece_images.get(name)
+                #color = "b" if row < 2 else "w"
+                #name = f"{piece}_{color}"
+                image = self.piece_images.get(piece)
                 if image:
                     x = col * square_size + board_margin
                     y = row * square_size + board_margin
@@ -165,13 +166,13 @@ class Interface:
         pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=r)
         img.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
 
-    def update(self):
+    def update(self, positions):
         self.win.fill(BLACK)
         self.draw_board()
-        self.draw_pieces()
+        self.draw_pieces(positions)
         self.draw_sidebar()
         pygame.display.flip()
-
+"""
     def handle_mouse_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.start_button_rect.collidepoint(event.pos):
@@ -187,21 +188,24 @@ class Interface:
                 except AttributeError:
                     print("El archivo 'juego_posicional.py' no tiene función main() para ejecutar.")
                 sys.exit()
-
+"""
 def main():
     pygame.init()
     win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Chess Interface")
     interface = Interface(win)
+    clock = pygame.time.Clock()
+
+    model=juego_posicional.Board()
 
     running = True
     while running:
+        clock.tick(60)  # 60 FPS
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            interface.handle_mouse_event(event)
-
-        interface.update()
+            #interface.handle_mouse_event(event)
+        interface.update(model.current_positions)
 
     pygame.quit()
     sys.exit()
