@@ -1,9 +1,9 @@
 import pygame
 import os
 import sys
-import juego_posicional as m
+import Model as m
 
-import clase_interface
+import View
 
 # Parámetros tablero
 BOARD_SIZE_RATIO = 0.9
@@ -12,7 +12,7 @@ BOARD_MARGIN_RATIO = (1 - BOARD_SIZE_RATIO) / 2
 class ChessPresenter:
     def __init__(self, win):
         self.model = m.Board()
-        self.view = clase_interface.Interface(win)
+        self.view = View.Interface(win)
         self.win = win
 
         self.font = pygame.font.SysFont("Arial", 18)
@@ -22,6 +22,7 @@ class ChessPresenter:
         self.move_log = []
 
         # Map piezas nombre a clase
+        # considerar hacer un archivo para cada clase de pieza si se expande el proyecto
         self.class_map = {
             "pawn": m.Pawn,
             "knight": m.Knight,
@@ -115,5 +116,5 @@ class ChessPresenter:
             settings_pressed=self.settings_pressed
         )
         """
-        self.view.update(self.model.current_positions)
+        self.view.update(self.model.current_positions, legal_moves, self.move_log)
         

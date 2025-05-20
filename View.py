@@ -2,8 +2,8 @@ import pygame
 import os
 import sys
 
-import juego_posicional
-import Configuración
+import Model
+import Presenter
 
 # Colores
 BLACK = (48, 46, 43)
@@ -12,21 +12,12 @@ LIGHT = (237, 237, 237)
 DARK = (137, 169, 103)
 TURQUOISE = (61, 213, 168)
 TURQUOISE_DARK = (41, 173, 138)
+TEXT_COLOR = (230, 230, 230)
 
 # Tamaños
 SCREEN_WIDTH = 900
 SCREEN_HEIGHT = 600
 SQUARE_SIZE = 60  # Puedes ajustar para que escale dinámicamente
-
-# Posiciones iniciales
-initial_positions = {
-    "rook": [(0, 0), (7, 0), (0, 7), (7, 7)],
-    "knight": [(1, 0), (6, 0), (1, 7), (6, 7)],
-    "bishop": [(2, 0), (5, 0), (2, 7), (5, 7)],
-    "queen": [(3, 0), (3, 7)],
-    "king": [(4, 0), (4, 7)],
-    "pawn": [(i, 1) for i in range(8)] + [(i, 6) for i in range(8)],
-}
 
 class Interface:
     def __init__(self, win):
@@ -37,12 +28,17 @@ class Interface:
         self.b_size = 0.9  # board size relative to window height (%)
         self.b_margin = (1 - self.b_size) / 2  # board margin to window height (%)
 
+        self.movestext_y = 0.3
+        self.movestext_x= 0.2
+
         self.start_button_rect=None
         self.settings_button_rect=None
 
         self.start_pressed = False
         self.settings_pressed = False
         self.font_button = pygame.font.SysFont("Arial", 28, bold=True)
+
+        self.font_move = pygame.font.SysFont("Arial", 18)
 
         self.piece_images = {}
         self.load_piece_images()
@@ -112,27 +108,31 @@ class Interface:
                 text = dynamic_font.render(line, True, WHITE)
                 text_rect = text.get_rect(center=(sdb_posx + sdb_dimx / 2, sdb_posy + sdb_dimy * 0.1 + i * font_size))
                 self.win.blit(text, text_rect)
+            self.draw_buttons(sdb_posx)
 
-            # Buttons
-            b_posx = sdb_posx - self.win.get_size()[1] * 0.0875
-            b_posy_down, b_posy_up = self.win.get_size()[1] * 0.51, self.win.get_size()[1] * 0.42
-            b_dim = self.win.get_size()[1] * 0.075
+            return sdb_posx, sdb_dimx, sdb_posy, sdb_dimy
 
-            self.start_button_rect = pygame.Rect(b_posx, b_posy_up, b_dim, b_dim,
-                                                 border_radius=self.win.get_size()[1] * 0.01)
-            self.settings_button_rect = pygame.Rect(b_posx, b_posy_down, b_dim, b_dim,
-                                                    border_radius=self.win.get_size()[1] * 0.01)
+    def draw_buttons(self, sdb_posx):
+        # Buttons
+        b_posx = sdb_posx - self.win.get_size()[1] * 0.0875
+        b_posy_down, b_posy_up = self.win.get_size()[1] * 0.51, self.win.get_size()[1] * 0.42
+        b_dim = self.win.get_size()[1] * 0.075
 
-            self.draw_button(self.start_button_rect, "", self.start_pressed)
-            self.draw_button(self.settings_button_rect, "", self.settings_pressed)
+        self.start_button_rect = pygame.Rect(b_posx, b_posy_up, b_dim, b_dim,
+                                             border_radius=self.win.get_size()[1] * 0.01)
+        self.settings_button_rect = pygame.Rect(b_posx, b_posy_down, b_dim, b_dim,
+                                                border_radius=self.win.get_size()[1] * 0.01)
 
-            # Dibujar triángulo de "play" en el botón de inicio
-            self.draw_play_icon(self.start_button_rect)
+        self.create_button(self.start_button_rect, "", self.start_pressed)
+        self.create_button(self.settings_button_rect, "", self.settings_pressed)
 
-            # Dibujar texto "Settings" en el botón de configuración, ajustado al espacio
-            self.draw_settings_text(self.settings_button_rect)
+        # Dibujar triángulo de "play" en el botón de inicio
+        self.draw_play_icon(self.start_button_rect)
 
-    def draw_button(self, rect, text, is_pressed):
+        # Dibujar texto "Settings" en el botón de configuración, ajustado al espacio
+        self.draw_settings_text(self.settings_button_rect)
+
+    def create_button(self, rect, text, is_pressed):
         color = BLACK if is_pressed else DARK
         offset = 2 if is_pressed else 0
         pygame.draw.rect(self.win, color, rect, border_radius=8)
@@ -168,58 +168,60 @@ class Interface:
         mask = pygame.Surface(img.get_size(), pygame.SRCALPHA)
         pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=r)
         img.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+    
+    def draw_legal_moves_highlights(self, legal_moves):
+        if not legal_moves:
+            return
+        """
+        h = self.win.get_size()[1]
+        margin = h * self.b_margin
+        square_size = (h * self.b_size) / 8
 
-    def update(self, positions):
+        overlay = pygame.Surface((int(square_size), int(square_size)), pygame.SRCALPHA)
+        overlay.fill((48, 46, 43))  # translucent light green
+
+        for move in legal_moves:
+            c, r = move
+            pos_x = int(margin + c * square_size)
+            pos_y = int(margin + r * square_size)
+            self.win.blit(overlay, (pos_x, pos_y))
+        """
+
+        h = self.win.get_size()[1]
+        margin = h * self.b_margin
+        square_size = (h * self.b_size) / 8
+
+        for col, row in legal_moves:
+            center_x = int(margin + col * square_size)
+            center_y = int(margin + row * square_size)
+            radius = int(square_size * 0.15)  # You can tweak this size
+            highlight = pygame.Surface((int(square_size), int(square_size)), pygame.SRCALPHA)
+            pygame.draw.circle(highlight, (48, 46, 43, 180), (square_size // 2, square_size // 2), radius)
+            self.win.blit(highlight, (center_x, center_y))
+
+    def write_moves(self, move_log, sdb_posx, sdb_dimx, sdb_posy, sdb_dimy):
+
+        max_moves_to_show = int(sdb_dimy*0.675/22)
+        displayed_moves = move_log[-max_moves_to_show:]
+
+        x=sdb_posx+sdb_dimx*self.movestext_x
+        y = sdb_posy+sdb_dimy*self.movestext_y
+        
+        for i, move in enumerate(displayed_moves, start=len(move_log) - len(displayed_moves) + 1):
+            move_text = f"{i}. {move}"
+            text_surf = self.font_move.render(move_text, True, TEXT_COLOR)
+            self.win.blit(text_surf, (x, y))
+            y += 22
+
+    def update(self, positions, legal_moves, move_log):
         self.win.fill(BLACK)
         self.draw_board()
         self.draw_pieces(positions)
-        self.draw_sidebar()
+        sdb_posx, sdb_dimx, sdb_posy, sdb_dimy=self.draw_sidebar()
+        self.write_moves(move_log, sdb_posx, sdb_dimx, sdb_posy, sdb_dimy)
+        self.draw_legal_moves_highlights(legal_moves)
         pygame.display.flip()
-"""
-    def handle_mouse_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.start_button_rect.collidepoint(event.pos):
-                self.start_pressed = True
-                pygame.quit()
-                try:
-                    # Importar módulo "juego posicional"
-                    import juego_posicional
-                    # Ejecutar función main() en juego_posicional.py
-                    juego_posicional.main()
-                except ModuleNotFoundError:
-                    print("No se pudo encontrar el archivo 'juego_posicional.py'")
-                except AttributeError:
-                    print("El archivo 'juego_posicional.py' no tiene función main() para ejecutar.")
-                sys.exit()
-"""
-def main():
-    pygame.init()
-    win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
-    pygame.display.set_caption("Chess Interface")
-    
-    clock = pygame.time.Clock()
 
-    presenter=Configuración.ChessPresenter(win)
-
-    running = True
-    while running:
-        clock.tick(60)  # 60 FPS
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                presenter.handle_click(event.pos)
-            #elif event.type == pygame.VIDEORESIZE:
-                #presenter.update()
-            #interface.handle_mouse_event(event)
-        presenter.update()
-
-    pygame.quit()
-    sys.exit()
-
-
-if __name__ == "__main__":
-    main()
 
 
 
