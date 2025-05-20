@@ -196,10 +196,9 @@ def main():
     pygame.init()
     win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Chess Interface")
-    interface = Interface(win)
+    
     clock = pygame.time.Clock()
 
-    model=juego_posicional.Board()
     presenter=Configuración.ChessPresenter(win)
 
     running = True
