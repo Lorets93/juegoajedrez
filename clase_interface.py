@@ -1,9 +1,9 @@
 import pygame
 import os
 import sys
-import importlib
-import math
+
 import juego_posicional
+import Configuración
 
 # Colores
 BLACK = (48, 46, 43)
@@ -36,6 +36,9 @@ class Interface:
         self.b_pos = (0, 0)  # tuple - board top-left corner position
         self.b_size = 0.9  # board size relative to window height (%)
         self.b_margin = (1 - self.b_size) / 2  # board margin to window height (%)
+
+        self.start_button_rect=None
+        self.settings_button_rect=None
 
         self.start_pressed = False
         self.settings_pressed = False
@@ -197,6 +200,7 @@ def main():
     clock = pygame.time.Clock()
 
     model=juego_posicional.Board()
+    presenter=Configuración.ChessPresenter(win)
 
     running = True
     while running:
@@ -204,8 +208,12 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                presenter.handle_click(event.pos)
+            #elif event.type == pygame.VIDEORESIZE:
+                #presenter.update()
             #interface.handle_mouse_event(event)
-        interface.update(model.current_positions)
+        presenter.update()
 
     pygame.quit()
     sys.exit()

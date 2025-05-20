@@ -188,7 +188,7 @@ class Board:
         if start_pos in self.current_positions[piece_key]:
             self.current_positions[piece_key].remove(start_pos)
         self.current_positions[piece_key].append(end_pos)
-
+"""
 # View: renderizado UI y tablero
 class ChessView:
     def __init__(self, win):
@@ -300,7 +300,8 @@ class ChessView:
         self.draw_pieces(current_positions, piece_objects)
         self.draw_sidebar(move_log, start_pressed, settings_pressed)
         pygame.display.flip()
-
+"""
+"""
 # Presenter: maneja la interacción, actualiza modelo y vista
 class ChessPresenter:
     def __init__(self, win):
@@ -410,7 +411,8 @@ class ChessPresenter:
 
     def window_resized(self):
         self.view.update_dimensions()
-
+"""
+"""
 def main():
     pygame.init()
     win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
@@ -438,7 +440,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-
+"""
 
 
 
