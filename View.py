@@ -213,13 +213,15 @@ class Interface:
             self.win.blit(text_surf, (x, y))
             y += 22
 
-    def update(self, positions, legal_moves, move_log):
+    def update(self, positions, legal_moves=None, move_log=None):
         self.win.fill(BLACK)
         self.draw_board()
         self.draw_pieces(positions)
         sdb_posx, sdb_dimx, sdb_posy, sdb_dimy=self.draw_sidebar()
-        self.write_moves(move_log, sdb_posx, sdb_dimx, sdb_posy, sdb_dimy)
-        self.draw_legal_moves_highlights(legal_moves)
+        if move_log is not None:
+            self.write_moves(move_log, sdb_posx, sdb_dimx, sdb_posy, sdb_dimy)
+        if legal_moves is not None:
+            self.draw_legal_moves_highlights(legal_moves)
         pygame.display.flip()
 
 

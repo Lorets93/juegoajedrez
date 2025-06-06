@@ -21,6 +21,8 @@ class ChessPresenter:
         self.selected_pos = None
         self.move_log = []
 
+        self.game_started = False
+
         # Map piezas nombre a clase
         # considerar hacer un archivo para cada clase de pieza si se expande el proyecto
         self.class_map = {
@@ -58,6 +60,7 @@ class ChessPresenter:
 
     def handle_click(self, pos):
         if self.view.start_button_rect.collidepoint(pos):
+            self.game_started=not self.game_started
             self.start_pressed = True
             self.reset_game()
             return
@@ -106,15 +109,7 @@ class ChessPresenter:
             piece_obj = self.piece_objects.get(self.selected_piece)
             if piece_obj:
                 legal_moves = piece_obj.get_moves(self.selected_pos, self.model)
-        """
-        self.view.draw(
-            current_positions=self.model.current_positions,
-            piece_objects=self.piece_objects,
-            legal_moves=legal_moves,
-            move_log=self.move_log,
-            start_pressed=self.start_pressed,
-            settings_pressed=self.settings_pressed
-        )
-        """
-        self.view.update(self.model.current_positions, legal_moves, self.move_log)
-        
+        if self.game_started:
+            self.view.update(self.model.current_positions, legal_moves, self.move_log)
+        else:
+            self.view.update(self.model.initial_positions)
