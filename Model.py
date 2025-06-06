@@ -188,7 +188,7 @@ class Board:
         if start_pos in self.current_positions[piece_key]:
             self.current_positions[piece_key].remove(start_pos)
         self.current_positions[piece_key].append(end_pos)
-
+"""
 # View: renderizado UI y tablero
 class ChessView:
     def __init__(self, win):
@@ -236,9 +236,9 @@ class ChessView:
         self.win.blit(board, (margin, margin))
 
     def draw_pieces(self, current_positions, piece_objects):
-        h = self.win.get_size()[1]
-        margin = h * self.b_margin
-        square_size = (h * self.b_size) / 8
+        h = self.win.get_size()[1]#
+        margin = h * self.b_margin#
+        square_size = (h * self.b_size) / 8#
 
         for piece_key, positions in current_positions.items():
             piece_obj = piece_objects.get(piece_key)
@@ -300,145 +300,7 @@ class ChessView:
         self.draw_pieces(current_positions, piece_objects)
         self.draw_sidebar(move_log, start_pressed, settings_pressed)
         pygame.display.flip()
-
-# Presenter: maneja la interacción, actualiza modelo y vista
-class ChessPresenter:
-    def __init__(self, win):
-        self.model = Board()
-        self.win = win
-
-        self.font = pygame.font.SysFont("Arial", 18)
-        self.current_turn = "w"
-        self.selected_piece = None
-        self.selected_pos = None
-        self.move_log = []
-
-        # Map piezas nombre a clase
-        self.class_map = {
-            "pawn": Pawn,
-            "knight": Knight,
-            "bishop": Bishop,
-            "rook": Rook,
-            "queen": Queen,
-            "king": King,
-        }
-
-        self.piece_objects = self.load_piece_objects()
-        self.view = ChessView(win)
-
-        self.start_pressed = False
-        self.settings_pressed = False
-
-    def load_piece_objects(self):
-        objs = {}
-        for piece_key in self.model.current_positions.keys():
-            name, color = piece_key.split("_")
-            cls = self.class_map.get(name, Piece)
-            objs[piece_key] = cls(name, color)
-        return objs
-
-    def get_square_under_mouse(self, pos):
-        board_margin = self.win.get_size()[1] * BOARD_MARGIN_RATIO
-        board_size = self.win.get_size()[1] * BOARD_SIZE_RATIO
-        square_size = board_size / 8
-        x, y = pos
-        col = int((x - board_margin) // square_size)
-        row = int((y - board_margin) // square_size)
-        if 0 <= col < 8 and 0 <= row < 8:
-            return (col, row)
-        return None
-
-    def handle_click(self, pos):
-        if self.view.start_button_rect.collidepoint(pos):
-            self.start_pressed = True
-            self.reset_game()
-            return
-        elif self.view.settings_button_rect.collidepoint(pos):
-            self.settings_pressed = True
-            return
-
-        sq = self.get_square_under_mouse(pos)
-        if not sq:
-            self.selected_piece = None
-            self.selected_pos = None
-            return
-
-        if not self.selected_piece:
-            for piece_key, positions in self.model.current_positions.items():
-                if sq in positions and piece_key.endswith(f"_{self.current_turn}"):
-                    self.selected_piece = piece_key
-                    self.selected_pos = sq
-                    break
-        else:
-            piece_obj = self.piece_objects.get(self.selected_piece)
-            moves = piece_obj.get_moves(self.selected_pos, self.model)
-            if sq in moves:
-                start_not = pos_to_notation(self.selected_pos)
-                end_not = pos_to_notation(sq)
-                move_str = f"{start_not} -> {end_not}"
-                self.model.move_piece(self.selected_piece, self.selected_pos, sq)
-                self.move_log.append(move_str)
-                self.current_turn = "b" if self.current_turn == "w" else "w"
-            self.selected_piece = None
-            self.selected_pos = None
-
-    def reset_game(self):
-        self.model = Board()
-        self.piece_objects = self.load_piece_objects()
-        self.current_turn = "w"
-        self.move_log.clear()
-        self.selected_piece = None
-        self.selected_pos = None
-        self.start_pressed = False
-        self.settings_pressed = False
-
-    def update(self):
-        legal_moves = []
-        if self.selected_piece and self.selected_pos:
-            piece_obj = self.piece_objects.get(self.selected_piece)
-            if piece_obj:
-                legal_moves = piece_obj.get_moves(self.selected_pos, self.model)
-
-        self.view.draw(
-            current_positions=self.model.current_positions,
-            piece_objects=self.piece_objects,
-            legal_moves=legal_moves,
-            move_log=self.move_log,
-            start_pressed=self.start_pressed,
-            settings_pressed=self.settings_pressed
-        )
-
-    def window_resized(self):
-        self.view.update_dimensions()
-
-def main():
-    pygame.init()
-    win = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
-    pygame.display.set_caption("Chess Game with MVP Architecture")
-
-    presenter = ChessPresenter(win)
-    clock = pygame.time.Clock()
-    running = True
-
-    while running:
-        clock.tick(60)  # 60 FPS
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                presenter.handle_click(event.pos)
-            elif event.type == pygame.VIDEORESIZE:
-                presenter.window_resized()
-
-        presenter.update()
-
-    pygame.quit()
-    sys.exit()
-
-if __name__ == "__main__":
-    main()
-
+"""
 
 
 
