@@ -2,7 +2,6 @@ import pygame
 import os
 import sys
 import Model as m
-
 import View
 
 # Parámetros tablero
@@ -23,8 +22,6 @@ class ChessPresenter:
 
         self.game_started = False
 
-        # Map piezas nombre a clase
-        # considerar hacer un archivo para cada clase de pieza si se expande el proyecto
         self.class_map = {
             "pawn": m.Pawn,
             "knight": m.Knight,
@@ -59,8 +56,11 @@ class ChessPresenter:
         return None
 
     def handle_click(self, pos):
+        if self.view.game_over:
+            return  # No permitir más clics si el juego ha terminado
+
         if self.view.start_button_rect.collidepoint(pos):
-            self.game_started=not self.game_started
+            self.game_started = not self.game_started
             self.start_pressed = True
             self.reset_game()
             return
@@ -82,14 +82,28 @@ class ChessPresenter:
                     break
         else:
             piece_obj = self.piece_objects.get(self.selected_piece)
+            if not piece_obj:
+                return
+
             moves = piece_obj.get_moves(self.selected_pos, self.model)
             if sq in moves:
-                start_not = m.pos_to_notation(self.selected_pos) #change m
-                end_not = m.pos_to_notation(sq) #change m
+                start_not = m.pos_to_notation(self.selected_pos)
+                end_not = m.pos_to_notation(sq)
                 move_str = f"{start_not} -> {end_not}"
                 self.model.move_piece(self.selected_piece, self.selected_pos, sq)
                 self.move_log.append(move_str)
+
+                # Cambiar turno
                 self.current_turn = "b" if self.current_turn == "w" else "w"
+
+                # Verificar jaque o jaque mate
+                if self.model.is_king_in_check(self.current_turn):
+                    self.view.display_message("Jaque", (255, 0, 0))
+                    if self.model.is_checkmate(self.current_turn):
+                        self.view.display_message("Jaque Mate", (255, 0, 0), duration=3000)
+                        winner_name = "Blancas" if self.current_turn == "b" else "Negras"
+                        self.view.set_game_over(winner_name)
+
             self.selected_piece = None
             self.selected_pos = None
 
@@ -102,6 +116,7 @@ class ChessPresenter:
         self.selected_pos = None
         self.start_pressed = False
         self.settings_pressed = False
+        self.view.game_over = False
 
     def update(self):
         legal_moves = []

@@ -1,12 +1,11 @@
 import pygame
-import sys
 
 def pos_to_notation(pos):
     col_to_file = "abcdefgh"
     col, row = pos
     return f"{col_to_file[col]}{8 - row}"
 
-# Model: lógica y estado del juego y piezas
+# Modelo: piezas
 class Piece:
     def __init__(self, name, color):
         self.name = name
@@ -66,8 +65,6 @@ class Bishop(Piece):
                         break
                     else:
                         break
-                else:
-                    break
         return moves
 
 class Rook(Piece):
@@ -86,8 +83,6 @@ class Rook(Piece):
                         break
                     else:
                         break
-                else:
-                    break
         return moves
 
 class Queen(Piece):
@@ -107,8 +102,6 @@ class Queen(Piece):
                         break
                     else:
                         break
-                else:
-                    break
         return moves
 
 class King(Piece):
@@ -124,9 +117,9 @@ class King(Piece):
                     moves.append((new_col, new_row))
         return moves
 
+# Modelo: tablero
 class Board:
     def __init__(self):
-        # Posiciones iniciales
         self.initial_positions = {
             "rook_w": [(0, 7), (7, 7)],
             "knight_w": [(1, 7), (6, 7)],
@@ -141,31 +134,25 @@ class Board:
             "king_b": [(4, 0)],
             "pawn_b": [(col, 1) for col in range(8)],
         }
-        self.current_positions = {}
-        for k, v in self.initial_positions.items():
-            self.current_positions[k] = list(v)
+        self.current_positions = {k: list(v) for k, v in self.initial_positions.items()}
+        self.game_over = False
+        self.winner = None
 
     def is_square_empty(self, square):
-        for positions in self.current_positions.values():
-            if square in positions:
-                return False
-        return True
+        return all(square not in positions for positions in self.current_positions.values())
 
     def is_square_occupied_by_opponent(self, square, color):
         opponent = "b" if color == "w" else "w"
-        for piece, positions in self.current_positions.items():
-            if piece.endswith(f"_{opponent}") and square in positions:
-                return True
-        return False
+        return any(
+            piece.endswith(f"_{opponent}") and square in positions
+            for piece, positions in self.current_positions.items()
+        )
 
     def get_king_position(self, color):
-        king_key = f"king_{color}"
-        positions = self.current_positions.get(king_key, [])
-        return positions[0] if positions else None
+        return self.current_positions.get(f"king_{color}", [None])[0]
 
     def get_moves(self, piece_key, pos):
-        from your_piece_module import Pawn, Knight, Bishop, Rook, Queen, King
-        # Debes tener importadas tus clases de piezas aquí o adaptarlo a tu código
+        name, color = piece_key.split('_')
         piece_class_map = {
             "pawn": Pawn,
             "knight": Knight,
@@ -174,7 +161,6 @@ class Board:
             "queen": Queen,
             "king": King
         }
-        name, color = piece_key.split('_')
         piece_class = piece_class_map.get(name)
         if not piece_class:
             return []
@@ -189,7 +175,7 @@ class Board:
         for piece, positions in self.current_positions.items():
             if piece.endswith(f"_{opponent_color}"):
                 for pos in positions:
-                    moves = self.get_moves(piece_key, pos)
+                    moves = self.get_moves(piece, pos)
                     if king_pos in moves:
                         return True
         return False
@@ -212,26 +198,28 @@ class Board:
         return True
 
     def restore_captured(self, captured_pieces):
-        if captured_pieces:
-            for piece_key, pos in captured_pieces:
-                if piece_key in self.current_positions:
-                    self.current_positions[piece_key].append(pos)
-                else:
-                    self.current_positions[piece_key] = [pos]
+        for piece_key, pos in captured_pieces:
+            if piece_key in self.current_positions:
+                self.current_positions[piece_key].append(pos)
+            else:
+                self.current_positions[piece_key] = [pos]
 
     def move_piece(self, piece_key, start_pos, end_pos, simulate=False):
+        if self.game_over and not simulate:
+            return []
+
         captured_pieces = []
         for p, positions in list(self.current_positions.items()):
             if end_pos in positions:
-                if p.startswith("king"):
-                    if not simulate:
-                        self.game_over = True
-                        self.winner = "white" if p.endswith("b") else "black"
+                if p.startswith("king") and not simulate:
+                    self.game_over = True
+                    self.winner = "white" if p.endswith("b") else "black"
                 if simulate:
                     captured_pieces.append((p, end_pos))
                 positions.remove(end_pos)
                 if not positions:
                     del self.current_positions[p]
+
         if start_pos in self.current_positions.get(piece_key, []):
             self.current_positions[piece_key].remove(start_pos)
             self.current_positions[piece_key].append(end_pos)
@@ -240,65 +228,5 @@ class Board:
                 self.current_positions[piece_key].append(end_pos)
             elif piece_key not in self.current_positions:
                 self.current_positions[piece_key] = [end_pos]
+
         return captured_pieces
-
-    def display_message(surface, message, color, font_size=48, duration=1500):
-        """Muestra mensaje centrado en la superficie pygame"""
-        font = pygame.font.SysFont("Arial", font_size, bold=True)
-        text = font.render(message, True, color)
-        rect = text.get_rect(center=(surface.get_width() // 2, surface.get_height() // 2))
-        surface.fill((0, 0, 0, 128))  # opcional: fondo semitransparente
-        surface.blit(text, rect)
-        pygame.display.flip()
-        pygame.time.delay(duration)
-
-    def main():
-        pygame.init()
-        WIDTH, HEIGHT = 640, 640
-        screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption("Ajedrez con Jaque y Jaque Mate")
-        board = Board()
-        clock = pygame.time.Clock()
-        turn = "w"
-        selected_piece = None
-        selected_pos = None
-        running = True
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-
-                if board.game_over:
-                    continue  # No permitir movimientos si terminó
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = pygame.mouse.get_pos()
-                    tile_size = WIDTH // 8
-                    col = x // tile_size
-                    row = y // tile_size
-                    pos = (col, row)
-                    if selected_piece is None:
-                        # seleccionar pieza propia
-                        for piece_key, positions in board.current_positions.items():
-                            if piece_key.endswith(f"_{turn}") and pos in positions:
-                                selected_piece = piece_key
-                                selected_pos = pos
-                                break
-
-                    else:
-                        # intentar mover la pieza seleccionada
-                        moves = board.get_moves(selected_piece, selected_pos)
-                        if pos in moves:
-                            board.move_piece(selected_piece, selected_pos, pos)
-                            # Cambiar turno
-                            turn = "b" if turn == "w" else "w"
-                            # Verificar jaque o jaque mate para el que acaba de mover (turn es nuevo jugador)
-                            opponent = turn
-                            if board.is_king_in_check(opponent):
-                                display_message(screen, "Jaque", (255, 0, 0))
-                                if board.is_checkmate(opponent):
-                                    display_message(screen, "Jaque Mate", (255, 0, 0), duration=3000)
-                                    board.game_over = True
-                                    winner_name = "Blancas" if opponent == "b" else "Negras"
-                                    display_message(screen, f"{winner_name} ganan!", (255, 0, 0), duration=4000)
-                        selected_piece = None
-                        selected_pos = None
