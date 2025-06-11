@@ -1,21 +1,17 @@
-import pygame
-import os
-import sys
-import Model as m
 
+import pygame
+import Model as m
 import View
 
-# Parámetros tablero
 BOARD_SIZE_RATIO = 0.9
 BOARD_MARGIN_RATIO = (1 - BOARD_SIZE_RATIO) / 2
 
 class ChessPresenter:
     def __init__(self, win):
-        self.model = m.Board()
-        self.view = View.Interface(win)
         self.win = win
+        self.view = View.Interface(win)
+        self.model = m.Board()
 
-        self.font = pygame.font.SysFont("Arial", 18)
         self.current_turn = "w"
         self.selected_piece = None
         self.selected_pos = None
@@ -23,8 +19,6 @@ class ChessPresenter:
 
         self.game_started = False
 
-        # Map piezas nombre a clase
-        # considerar hacer un archivo para cada clase de pieza si se expande el proyecto
         self.class_map = {
             "pawn": m.Pawn,
             "knight": m.Knight,
@@ -35,9 +29,6 @@ class ChessPresenter:
         }
 
         self.piece_objects = self.load_piece_objects()
-
-        self.start_pressed = False
-        self.settings_pressed = False
 
     def load_piece_objects(self):
         objs = {}
@@ -59,13 +50,14 @@ class ChessPresenter:
         return None
 
     def handle_click(self, pos):
-        if self.view.start_button_rect.collidepoint(pos):
-            self.game_started=not self.game_started
-            self.start_pressed = True
+        if self.view.start_button_rect and self.view.start_button_rect.collidepoint(pos):
             self.reset_game()
             return
-        elif self.view.settings_button_rect.collidepoint(pos):
-            self.settings_pressed = True
+
+        if self.view.settings_button_rect and self.view.settings_button_rect.collidepoint(pos):
+            return
+
+        if not self.game_started or self.view.game_over:
             return
 
         sq = self.get_square_under_mouse(pos)
@@ -82,14 +74,41 @@ class ChessPresenter:
                     break
         else:
             piece_obj = self.piece_objects.get(self.selected_piece)
-            moves = piece_obj.get_moves(self.selected_pos, self.model)
-            if sq in moves:
-                start_not = m.pos_to_notation(self.selected_pos) #change m
-                end_not = m.pos_to_notation(sq) #change m
+            if not piece_obj:
+                return
+
+            legal_moves = piece_obj.get_moves(self.selected_pos, self.model)
+            if sq in legal_moves:
+                start_not = m.pos_to_notation(self.selected_pos)
+                end_not = m.pos_to_notation(sq)
                 move_str = f"{start_not} -> {end_not}"
                 self.model.move_piece(self.selected_piece, self.selected_pos, sq)
                 self.move_log.append(move_str)
+
+                # Cambiar turno primero
                 self.current_turn = "b" if self.current_turn == "w" else "w"
+                attacked_color = self.current_turn  # el que ahora juega, es el que ha sido atacado
+
+                # Verificar si el rey fue comido directamente
+                if self.model.game_over:
+                    winner = "Blancas" if self.model.winner == "white" else "Negras"
+                    self.view.display_message(f"{winner} ganan!", (255, 0, 0), duration=4000)
+                    pygame.time.delay(1000)
+                    self.reset_game()
+                    return
+
+                # Verificar jaque / jaque mate
+                if self.model.is_king_in_check(attacked_color):
+                    self.view.display_message("Jaque", (255, 0, 0), duration=1500)
+
+                    if self.model.is_checkmate(attacked_color):
+                        self.view.display_message("Jaque Mate", (255, 0, 0), duration=3000)
+                        winner = "Blancas" if attacked_color == "b" else "Negras"
+                        self.view.display_message(f"{winner} ganan!", (255, 0, 0), duration=4000)
+                        pygame.time.delay(1000)
+                        self.reset_game()
+                        return
+
             self.selected_piece = None
             self.selected_pos = None
 
@@ -97,19 +116,23 @@ class ChessPresenter:
         self.model = m.Board()
         self.piece_objects = self.load_piece_objects()
         self.current_turn = "w"
-        self.move_log.clear()
         self.selected_piece = None
         self.selected_pos = None
-        self.start_pressed = False
-        self.settings_pressed = False
+        self.move_log.clear()
+        self.view.game_over = False
+        self.game_started = True
 
     def update(self):
         legal_moves = []
-        if self.selected_piece and self.selected_pos:
+        if self.selected_piece and self.selected_pos and not self.view.game_over:
             piece_obj = self.piece_objects.get(self.selected_piece)
             if piece_obj:
                 legal_moves = piece_obj.get_moves(self.selected_pos, self.model)
+
         if self.game_started:
             self.view.update(self.model.current_positions, legal_moves, self.move_log)
         else:
             self.view.update(self.model.initial_positions)
+
+
+
