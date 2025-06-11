@@ -8,21 +8,16 @@ LIGHT = (237, 237, 237)
 DARK = (137, 169, 103)
 TEXT_COLOR = (230, 230, 230)
 
-# Ratios de diseño
-SCREEN_WIDTH = 900
-SCREEN_HEIGHT = 600
-SQUARE_SIZE = 60  # Base, se escala dinámicamente si hace falta
-
 class Interface:
     def __init__(self, win):
         self.win = win
-
         self.b_img = pygame.image.load("images/board.png").convert_alpha()
+
         self.b_size = 0.9
         self.b_margin = (1 - self.b_size) / 2
 
-        self.movestext_y = 0.3
         self.movestext_x = 0.2
+        self.movestext_y = 0.3
 
         self.font_button = pygame.font.SysFont("Arial", 28, bold=True)
         self.font_move = pygame.font.SysFont("Arial", 18)
@@ -44,39 +39,37 @@ class Interface:
             for piece in pieces:
                 name = f"{piece}_{color}"
                 path = os.path.join("images", f"{name}.png")
-                image = pygame.image.load(path)
-                self.piece_images[name] = image
+                self.piece_images[name] = pygame.image.load(path)
 
     def draw_board(self):
-        b_pos = self.win.get_size()[1] * self.b_margin
-        b_dim = self.win.get_size()
-        b_s = b_dim[1] * self.b_size
-        board = pygame.transform.scale(self.b_img, (b_s, b_s))
-        self.round_corners(board, round(b_dim[1] * 0.01))
+        h = self.win.get_size()[1]
+        b_pos = h * self.b_margin
+        b_size = h * self.b_size
+        board = pygame.transform.scale(self.b_img, (b_size, b_size))
+        self.round_corners(board, round(h * 0.01))
         self.win.blit(board, (b_pos, b_pos))
 
     def draw_pieces(self, positions):
-        margin = self.win.get_size()[1] * self.b_margin
-        board_size = self.win.get_size()[1] * self.b_size
-        square_size = board_size / 8
+        h = self.win.get_size()[1]
+        margin = h * self.b_margin
+        square_size = h * self.b_size / 8
 
         for piece, pos_list in positions.items():
             image = self.piece_images.get(piece)
-            if not image:
-                continue
-            for col, row in pos_list:
-                x = col * square_size + margin
-                y = row * square_size + margin
-                scaled = pygame.transform.smoothscale(image, (square_size, square_size))
-                self.win.blit(scaled, (x, y))
+            if image:
+                for col, row in pos_list:
+                    x = col * square_size + margin
+                    y = row * square_size + margin
+                    scaled = pygame.transform.smoothscale(image, (square_size, square_size))
+                    self.win.blit(scaled, (x, y))
 
     def draw_sidebar(self):
         h = self.win.get_size()[1]
-        margin = h * self.b_margin
+        w = self.win.get_size()[0]
         sdb_posx = h * (3 * self.b_margin + self.b_size)
-        sdb_dimx = self.win.get_size()[0] * 0.975 - sdb_posx
+        sdb_dimx = w * 0.975 - sdb_posx
         sdb_dimy = h * self.b_size
-        sdb_posy = margin
+        sdb_posy = h * self.b_margin
 
         if sdb_dimx > h * 0.1:
             sidebar = pygame.Surface((sdb_dimx, sdb_dimy), pygame.SRCALPHA)
@@ -98,8 +91,8 @@ class Interface:
 
     def draw_buttons(self, sdb_posx):
         h = self.win.get_size()[1]
-        b_posx = sdb_posx - h * 0.0875
         b_dim = h * 0.075
+        b_posx = sdb_posx - h * 0.0875
         b_posy_up = h * 0.42
         b_posy_down = h * 0.51
 
@@ -149,17 +142,15 @@ class Interface:
     def draw_legal_moves_highlights(self, legal_moves):
         if not legal_moves:
             return
+
         h = self.win.get_size()[1]
         margin = h * self.b_margin
-        square_size = (h * self.b_size) / 8
+        square_size = h * self.b_size / 8
 
         for col, row in legal_moves:
-            center_x = int(margin + col * square_size)
-            center_y = int(margin + row * square_size)
-            radius = int(square_size * 0.15)
             overlay = pygame.Surface((int(square_size), int(square_size)), pygame.SRCALPHA)
-            pygame.draw.circle(overlay, (48, 46, 43, 180), (square_size // 2, square_size // 2), radius)
-            self.win.blit(overlay, (center_x, center_y))
+            pygame.draw.circle(overlay, (48, 46, 43, 180), (square_size // 2, square_size // 2), int(square_size * 0.15))
+            self.win.blit(overlay, (int(margin + col * square_size), int(margin + row * square_size)))
 
     def write_moves(self, move_log, sdb_posx, sdb_dimx, sdb_posy, sdb_dimy):
         max_moves = int(sdb_dimy * 0.675 / 22)
@@ -198,13 +189,3 @@ class Interface:
     def set_game_over(self, winner_name):
         self.display_message(f"{winner_name} gana!", (255, 0, 0), duration=4000)
         self.game_over = True
-
-
-
-
-
-
-
-
-
-
