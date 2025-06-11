@@ -43,6 +43,8 @@ class Interface:
         self.piece_images = {}
         self.load_piece_images()
 
+        self.game_over = False  # Nuevo atributo para indicar fin de juego
+
     def load_piece_images(self):
         pieces = ["rook", "knight", "bishop", "queen", "king", "pawn"]
         colors = ["w", "b"]
@@ -224,6 +226,22 @@ class Interface:
             self.draw_legal_moves_highlights(legal_moves)
         pygame.display.flip()
 
+    # Nuevo método para mostrar mensajes como "Jaque" o "Jaque Mate"
+    def display_message(self, message, color, font_size=48, duration=2000):
+        font = pygame.font.SysFont("Arial", font_size, bold=True)
+        text = font.render(message, True, color)
+        rect = text.get_rect(center=(self.win.get_width() // 2, self.win.get_height() // 2))
+        overlay = pygame.Surface(self.win.get_size(), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))  # Fondo semi-transparente
+        self.win.blit(overlay, (0, 0))
+        self.win.blit(text, rect)
+        pygame.display.flip()
+        pygame.time.delay(duration)
+
+    # Método para bloquear el juego tras el fin
+    def set_game_over(self, winner_name):
+        self.display_message(f"{winner_name} gana!", (255, 0, 0), duration=4000)
+        self.game_over = True
 
 
 
