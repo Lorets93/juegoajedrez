@@ -1,4 +1,3 @@
-
 import pygame
 import Model as m
 import View
@@ -18,6 +17,7 @@ class ChessPresenter:
         self.move_log = []
 
         self.game_started = False
+        self.settings_open = False
 
         self.class_map = {
             "pawn": m.Pawn,
@@ -55,6 +55,21 @@ class ChessPresenter:
             return
 
         if self.view.settings_button_rect and self.view.settings_button_rect.collidepoint(pos):
+            self.settings_open = not self.settings_open
+            return
+
+        if self.settings_open:
+            action = self.view.handle_settings_click(pos)
+            if action == "toggle_sound":
+                self.view.sound_on = not self.view.sound_on
+            elif action == "toggle_theme":
+                self.view.dark_theme = not self.view.dark_theme
+            elif action == "toggle_language":
+                self.view.language = "es" if self.view.language == "en" else "en"
+            elif action == "show_help":
+                self.view.display_help()
+            elif action == "close_settings":
+                self.settings_open = False
             return
 
         if not self.game_started or self.view.game_over:
@@ -85,26 +100,23 @@ class ChessPresenter:
                 self.model.move_piece(self.selected_piece, self.selected_pos, sq)
                 self.move_log.append(move_str)
 
-                # Cambiar turno primero
                 self.current_turn = "b" if self.current_turn == "w" else "w"
-                attacked_color = self.current_turn  # el que ahora juega, es el que ha sido atacado
+                attacked_color = self.current_turn
 
-                # Verificar si el rey fue comido directamente
                 if self.model.game_over:
                     winner = "Blancas" if self.model.winner == "white" else "Negras"
-                    self.view.display_message(f"{winner} ganan!", (255, 0, 0), duration=4000)
+                    self.view.display_message(f"{winner} ganan!", (255, 0, 0))
                     pygame.time.delay(1000)
                     self.reset_game()
                     return
 
-                # Verificar jaque / jaque mate
                 if self.model.is_king_in_check(attacked_color):
-                    self.view.display_message("Jaque", (255, 0, 0), duration=1500)
-
+                    message = "Jaque" if self.view.language == "es" else "Check"
+                    self.view.display_message(message, (255, 0, 0))
                     if self.model.is_checkmate(attacked_color):
-                        self.view.display_message("Jaque Mate", (255, 0, 0), duration=3000)
+                        self.view.display_message("Jaque Mate", (255, 0, 0))
                         winner = "Blancas" if attacked_color == "b" else "Negras"
-                        self.view.display_message(f"{winner} ganan!", (255, 0, 0), duration=4000)
+                        self.view.display_message(f"{winner} ganan!", (255, 0, 0))
                         pygame.time.delay(1000)
                         self.reset_game()
                         return
@@ -130,9 +142,6 @@ class ChessPresenter:
                 legal_moves = piece_obj.get_moves(self.selected_pos, self.model)
 
         if self.game_started:
-            self.view.update(self.model.current_positions, legal_moves, self.move_log)
+            self.view.update(self.model.current_positions, legal_moves, self.move_log, show_settings=self.settings_open)
         else:
-            self.view.update(self.model.initial_positions)
-
-
-
+            self.view.update(self.model.initial_positions, show_settings=self.settings_open)
