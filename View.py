@@ -34,6 +34,11 @@ class Interface:
         self.language = "en"
         self.settings_buttons = {}
 
+        pygame.mixer.init()
+        self.move_sound = pygame.mixer.Sound("sounds/piecemove.wav")
+        self.check_sound = pygame.mixer.Sound("sounds/checkmate.wav")
+        self.victory_sound = pygame.mixer.Sound("sounds/victory.wav")
+
     def load_piece_images(self):
         pieces = ["rook", "knight", "bishop", "queen", "king", "pawn"]
         colors = ["w", "b"]
@@ -326,6 +331,21 @@ class Interface:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if close_rect.collidepoint(event.pos):
                         waiting = False
+
+    def play_move_sound(self):
+        if self.sound_on:
+            pygame.mixer.stop()  # Para evitar superposición
+            self.move_sound.play()
+
+    def play_check_sound(self):
+        if self.sound_on:
+            pygame.mixer.stop()
+            self.check_sound.play()
+
+    def play_victory_sound(self):
+        if self.sound_on:
+            pygame.mixer.stop()
+            self.victory_sound.play()
 
     def update(self, positions, legal_moves=None, move_log=None, show_settings=False):
         self.win.fill(BLACK)

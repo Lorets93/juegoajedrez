@@ -97,7 +97,9 @@ class ChessPresenter:
                 start_not = m.pos_to_notation(self.selected_pos)
                 end_not = m.pos_to_notation(sq)
                 move_str = f"{start_not} -> {end_not}"
+
                 self.model.move_piece(self.selected_piece, self.selected_pos, sq)
+                self.view.play_move_sound()
                 self.move_log.append(move_str)
 
                 self.current_turn = "b" if self.current_turn == "w" else "w"
@@ -105,6 +107,7 @@ class ChessPresenter:
 
                 if self.model.game_over:
                     winner = "Blancas" if self.model.winner == "white" else "Negras"
+                    self.view.play_victory_sound()
                     self.view.display_message(f"{winner} ganan!", (255, 0, 0))
                     pygame.time.delay(1000)
                     self.reset_game()
@@ -112,6 +115,7 @@ class ChessPresenter:
 
                 if self.model.is_king_in_check(attacked_color):
                     message = "Jaque" if self.view.language == "es" else "Check"
+                    self.view.play_check_sound()
                     self.view.display_message(message, (255, 0, 0))
                     if self.model.is_checkmate(attacked_color):
                         self.view.display_message("Jaque Mate", (255, 0, 0))
