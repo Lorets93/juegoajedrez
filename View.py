@@ -39,6 +39,9 @@ class Interface:
         self.check_sound = pygame.mixer.Sound("sounds/checkmate.wav")
         self.victory_sound = pygame.mixer.Sound("sounds/victory.wav")
 
+        self.scroll_offset = 0
+        self.max_scroll_offset = 0
+
     def load_piece_images(self):
         pieces = ["rook", "knight", "bishop", "queen", "king", "pawn"]
         colors = ["w", "b"]
@@ -168,56 +171,79 @@ class Interface:
             pygame.draw.circle(overlay, (48, 46, 43, 180), (square_size // 2, square_size // 2), int(square_size * 0.15))
             self.win.blit(overlay, (int(margin + col * square_size), int(margin + row * square_size)))
 
-    def display_message(self, message, color, font_size=48):
+    def display_message(self, message, color, font_size=36):
+        w, h = self.win.get_size()
+
+        # Panel central estilo botón
+        panel_width = w * 0.5
+        panel_height = h * 0.2
+        panel_x = (w - panel_width) // 2
+        panel_y = (h - panel_height) // 2
+
+        # Fondo semi-transparente
+        overlay = pygame.Surface((w, h), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        self.win.blit(overlay, (0, 0))
+
+        # Panel
+        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        panel.fill((40, 40, 40, 230))
+        self.round_corners(panel, 12)
+        self.win.blit(panel, (panel_x, panel_y))
+
+        # Texto principal
         font = pygame.font.SysFont("Arial", font_size, bold=True)
         text = font.render(message, True, color)
-        rect = text.get_rect(center=(self.win.get_width() // 2, self.win.get_height() // 2 - 40))
+        rect = text.get_rect(center=(w // 2, panel_y + panel_height // 2 - 20))
+        self.win.blit(text, rect)
 
-        # Texto del botón traducido
-        close_label = "Cerrar" if self.language == "es" else "Close"
+        # Botón cerrar
         button_width = 120
         button_height = 40
         close_rect = pygame.Rect(
-            (self.win.get_width() - button_width) // 2,
-            rect.bottom + 30,
+            w // 2 - button_width // 2,
+            panel_y + panel_height - button_height - 10,
             button_width,
             button_height
         )
+        close_label = "Cerrar" if self.language == "es" else "Close"
+        button_font = pygame.font.SysFont("Arial", 22, bold=True)
+        button_text = button_font.render(close_label, True, WHITE)
+        button_text_rect = button_text.get_rect(center=close_rect.center)
 
-        while True:
+        pygame.draw.rect(self.win, (100, 40, 40), close_rect, border_radius=8)
+        self.win.blit(button_text, button_text_rect)
+
+        pygame.display.flip()
+
+        # Esperar al clic
+        waiting = True
+        while waiting:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-                elif event.type == pygame.MOUSEBUTTONDOWN and close_rect.collidepoint(event.pos):
-                    return
-
-            # Fondo translúcido
-            overlay = pygame.Surface(self.win.get_size(), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 180))
-            self.win.blit(overlay, (0, 0))
-
-            # Mensaje
-            self.win.blit(text, rect)
-
-            # Botón traducido
-            pygame.draw.rect(self.win, (100, 40, 40), close_rect, border_radius=8)
-            button_text = pygame.font.SysFont("Arial", 24, bold=True).render(close_label, True, WHITE)
-            self.win.blit(button_text, button_text.get_rect(center=close_rect.center))
-
-            pygame.display.flip()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if close_rect.collidepoint(event.pos):
+                        waiting = False
 
     def write_moves(self, move_log, sdb_posx, sdb_dimx, sdb_posy, sdb_dimy):
-        max_moves = int(sdb_dimy * 0.675 / 22)
-        displayed = move_log[-max_moves:]
+        line_height = 22
+        max_visible_lines = int(sdb_dimy * 0.675 / line_height)
+        total_lines = len(move_log)
+
+        self.max_scroll_offset = max(0, total_lines - max_visible_lines)
+        self.scroll_offset = max(0, min(self.scroll_offset, self.max_scroll_offset))
+
+        displayed = move_log[self.scroll_offset:self.scroll_offset + max_visible_lines]
 
         x = sdb_posx + sdb_dimx * self.movestext_x
         y = sdb_posy + sdb_dimy * self.movestext_y
 
-        for i, move in enumerate(displayed, start=len(move_log) - len(displayed) + 1):
+        for i, move in enumerate(displayed, start=self.scroll_offset + 1):
             text = self.font_move.render(f"{i}. {move}", True, TEXT_COLOR)
             self.win.blit(text, (x, y))
-            y += 22
+            y += line_height
 
     def draw_settings_panel(self):
         w, h = self.win.get_size()
@@ -226,23 +252,35 @@ class Interface:
         panel_x = (w - panel_width) // 2
         panel_y = (h - panel_height) // 2
 
-        # Fondo oscuro translúcido
         overlay = pygame.Surface((w, h), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         self.win.blit(overlay, (0, 0))
 
-        # Panel principal
         panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
         panel.fill((30, 30, 30, 240))
         self.round_corners(panel, 12)
         self.win.blit(panel, (panel_x, panel_y))
 
         font = pygame.font.SysFont("Arial", 24, bold=True)
+
+        # Textos traducidos
+        lang = self.language
+        label_lang = "Idioma" if lang == "es" else "Language"
+        label_sound = "Sonido" if lang == "es" else "Sound"
+        label_theme = "Tema" if lang == "es" else "Theme"
+        label_rules = "Ver reglas" if lang == "es" else "See rules"
+        label_close = "Cerrar" if lang == "es" else "Close"
+
+        val_yes = "Sí" if lang == "es" else "Yes"
+        val_no = "No" if lang == "es" else "No"
+        val_dark = "Oscuro" if lang == "es" else "Dark"
+        val_light = "Claro" if lang == "es" else "Light"
+
         options = [
-            ("toggle_language", "Idioma: " + ("Español" if self.language == "es" else "English")),
-            ("toggle_sound", "Sonido: " + ("Sí" if self.sound_on else "No")),
-            ("toggle_theme", "Tema: " + ("Oscuro" if self.dark_theme else "Claro")),
-            ("show_help", "Ver reglas"),
+            ("toggle_language", f"{label_lang}: {'Español' if lang == 'es' else 'English'}"),
+            ("toggle_sound", f"{label_sound}: {val_yes if self.sound_on else val_no}"),
+            ("toggle_theme", f"{label_theme}: {val_dark if self.dark_theme else val_light}"),
+            ("show_help", label_rules),
         ]
 
         self.settings_buttons.clear()
@@ -263,12 +301,14 @@ class Interface:
 
             self.settings_buttons[key] = rect
 
-        # Botón "Cerrar"
+        # Botón "Cerrar / Close"
         close_y = start_y + len(options) * (button_height + spacing) + 10
-        close_rect = pygame.Rect(btn_x, close_y, button_width, button_height)
+        close_rect = pygame.Rect((w - button_width) // 2, close_y, button_width, button_height)
         pygame.draw.rect(self.win, (100, 40, 40), close_rect, border_radius=8)
-        close_text = font.render("Cerrar", True, WHITE)
-        self.win.blit(close_text, close_text.get_rect(center=close_rect.center))
+        close_text = font.render(label_close, True, WHITE)
+        close_text_rect = close_text.get_rect(center=close_rect.center)
+        self.win.blit(close_text, close_text_rect)
+
         self.settings_buttons["close_settings"] = close_rect
 
     def handle_settings_click(self, pos):

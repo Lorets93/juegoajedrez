@@ -128,6 +128,10 @@ class ChessPresenter:
             self.selected_piece = None
             self.selected_pos = None
 
+    def scroll_moves(self, direction):
+        self.view.scroll_offset += direction
+        self.view.scroll_offset = max(0, min(self.view.scroll_offset, self.view.max_scroll_offset))
+
     def reset_game(self):
         self.model = m.Board()
         self.piece_objects = self.load_piece_objects()
