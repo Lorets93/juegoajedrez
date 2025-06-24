@@ -1,24 +1,25 @@
+# Actúa como intermediario entre el modelo (lógica del ajedrez) y la vista (interfaz gráfica).
 import pygame
 import Model as m
 import View
-
+# Constantes para el tamaño del tablero
 BOARD_SIZE_RATIO = 0.9
 BOARD_MARGIN_RATIO = (1 - BOARD_SIZE_RATIO) / 2
 
 class ChessPresenter:
     def __init__(self, win):
         self.win = win
-        self.view = View.Interface(win)
-        self.model = m.Board()
+        self.view = View.Interface(win) # Interfaz de usuario
+        self.model = m.Board() # Lógica del tablero
 
-        self.current_turn = "w"
-        self.selected_piece = None
-        self.selected_pos = None
-        self.move_log = []
+        self.current_turn = "w"  # Turno actual ('w' = blancas, 'b' = negras)
+        self.selected_piece = None # Pieza seleccionada por el jugador
+        self.selected_pos = None # Posición seleccionada
+        self.move_log = []  # Registro de movimientos realizados
 
         self.game_started = False
         self.settings_open = False
-
+        # Mapa de nombres de piezas a sus clases
         self.class_map = {
             "pawn": m.Pawn,
             "knight": m.Knight,
@@ -31,6 +32,7 @@ class ChessPresenter:
         self.piece_objects = self.load_piece_objects()
 
     def load_piece_objects(self):
+        # Crea instancias de cada tipo de pieza según las posiciones actuales del modelo
         objs = {}
         for piece_key in self.model.current_positions.keys():
             name, color = piece_key.split("_")
@@ -39,6 +41,7 @@ class ChessPresenter:
         return objs
 
     def get_square_under_mouse(self, pos):
+        # Convierte la posición del ratón en una celda del tablero
         board_margin = self.win.get_size()[1] * BOARD_MARGIN_RATIO
         board_size = self.win.get_size()[1] * BOARD_SIZE_RATIO
         square_size = board_size / 8
@@ -50,6 +53,8 @@ class ChessPresenter:
         return None
 
     def handle_click(self, pos):
+        # Gestiona los clics del usuario: botones, tablero o ajustes
+
         # Botón "Start"
         if self.view.start_button_rect and self.view.start_button_rect.collidepoint(pos):
             self.view.start_pressed = True
@@ -79,16 +84,16 @@ class ChessPresenter:
                 self.settings_open = False
                 self.view.settings_pressed = False
             return
-
+        # Si el juego aún no ha empezado o ya terminó, no se hace nada
         if not self.game_started or self.view.game_over:
             return
-
+        # Traduce clic en pantalla a coordenada del tablero
         sq = self.get_square_under_mouse(pos)
         if not sq:
             self.selected_piece = None
             self.selected_pos = None
             return
-
+        # Si no hay pieza seleccionada aún, intenta seleccionarla
         if not self.selected_piece:
             for piece_key, positions in self.model.current_positions.items():
                 if sq in positions and piece_key.endswith(f"_{self.current_turn}"):
@@ -96,6 +101,7 @@ class ChessPresenter:
                     self.selected_pos = sq
                     break
         else:
+            # Si ya hay una pieza seleccionada, intenta moverla
             piece_obj = self.piece_objects.get(self.selected_piece)
             if not piece_obj:
                 return
@@ -110,9 +116,10 @@ class ChessPresenter:
                 self.view.play_move_sound()
                 self.move_log.append(move_str)
 
+                # Cambia de turno
                 self.current_turn = "b" if self.current_turn == "w" else "w"
                 attacked_color = self.current_turn
-
+                # Verifica si la partida terminó
                 if self.model.game_over:
                     winner = "Blancas" if self.model.winner == "white" else "Negras"
                     self.view.play_victory_sound()
@@ -120,7 +127,7 @@ class ChessPresenter:
                     pygame.time.delay(1000)
                     self.reset_game()
                     return
-
+                # Verifica si hay jaque o jaque mate
                 if self.model.is_king_in_check(attacked_color):
                     message = "Jaque" if self.view.language == "es" else "Check"
                     self.view.play_check_sound()
@@ -132,15 +139,17 @@ class ChessPresenter:
                         pygame.time.delay(1000)
                         self.reset_game()
                         return
-
+            # Deselecciona después de mover o cancelar
             self.selected_piece = None
             self.selected_pos = None
 
     def scroll_moves(self, direction):
+        # Permite hacer scroll en el registro de movimientos
         self.view.scroll_offset += direction
         self.view.scroll_offset = max(0, min(self.view.scroll_offset, self.view.max_scroll_offset))
 
     def reset_game(self):
+        # Reinicia la partida
         self.model = m.Board()
         self.piece_objects = self.load_piece_objects()
         self.current_turn = "w"

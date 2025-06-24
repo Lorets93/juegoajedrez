@@ -1,3 +1,5 @@
+# Define la interfaz gráfica del juego de ajedrez. Se encarga de dibujar tablero, piezas, botones, mensajes y sonidos.
+
 import pygame
 import os
 
@@ -13,36 +15,38 @@ class Interface:
         self.b_size = 0.9
         self.b_margin = (1 - self.b_size) / 2
 
+        # Fuentes para botones y texto de movimientos
         self.movestext_x = 0.2
         self.movestext_y = 0.3
 
         self.font_button = pygame.font.SysFont("Arial", 28, bold=True)
         self.font_move = pygame.font.SysFont("Arial", 18)
-
+        # Estados de botones y juego
         self.start_button_rect = None
         self.settings_button_rect = None
         self.start_pressed = False
         self.settings_pressed = False
 
         self.game_over = False
-
+        # Carga de imágenes de piezas
         self.piece_images = {}
         self.load_piece_images()
-
+        # Configuración inicial
         self.sound_on = True
         self.dark_theme = False
         self.language = "en"
         self.settings_buttons = {}
-
+        # Sonidos
         pygame.mixer.init()
         self.move_sound = pygame.mixer.Sound("sounds/piecemove.wav")
         self.check_sound = pygame.mixer.Sound("sounds/checkmate.wav")
         self.victory_sound = pygame.mixer.Sound("sounds/victory.wav")
-
+        # Scroll en historial de movimientos
         self.scroll_offset = 0
         self.max_scroll_offset = 0
 
     def load_piece_images(self):
+        # Carga las imágenes de cada tipo de pieza
         pieces = ["rook", "knight", "bishop", "queen", "king", "pawn"]
         colors = ["w", "b"]
         for color in colors:
@@ -52,18 +56,18 @@ class Interface:
                 self.piece_images[name] = pygame.image.load(path)
 
     def draw_board(self):
+        # Dibuja el fondo del tablero
         h = self.win.get_size()[1]
         b_pos = h * self.b_margin
         b_size = h * self.b_size
-
         board_path = "images/board_dark.png" if self.dark_theme else "images/board_light.png"
         board_img = pygame.image.load(board_path).convert_alpha()
         board = pygame.transform.scale(board_img, (b_size, b_size))
-
         self.round_corners(board, round(h * 0.01))
         self.win.blit(board, (b_pos, b_pos))
 
     def draw_pieces(self, positions):
+        # Dibuja todas las piezas en sus posiciones actuales
         h = self.win.get_size()[1]
         margin = h * self.b_margin
         square_size = h * self.b_size / 8
@@ -78,6 +82,7 @@ class Interface:
                     self.win.blit(scaled, (x, y))
 
     def draw_sidebar(self):
+        # Dibuja la barra lateral con el título, botones y espacio para movimientos
         h = self.win.get_size()[1]
         w = self.win.get_size()[0]
         sdb_posx = h * (3 * self.b_margin + self.b_size)
@@ -93,7 +98,7 @@ class Interface:
 
             font_size = min(int(sdb_dimy * 0.15), int(sdb_dimx * 0.12))
             dynamic_font = pygame.font.SysFont("Arial", font_size, bold=True)
-
+            # Texto dinámico
             if self.language == "es":
                 lines = ["AJEDREZ"] if self.start_pressed else ["JUGUEMOS", "A", "AJEDREZ"]
             else:
@@ -107,6 +112,7 @@ class Interface:
             return sdb_posx, sdb_dimx, sdb_posy, sdb_dimy
 
     def draw_buttons(self, sdb_posx):
+        # Dibuja los botones de Play y Settings con efecto de clic
         h = self.win.get_size()[1]
         b_dim = h * 0.08
         b_posx = sdb_posx - h * 0.0875
@@ -134,6 +140,7 @@ class Interface:
             self.win.blit(text_surface, text_rect)
 
     def draw_play_icon(self, rect):
+        # Dibuja el triángulo del botón de Play
         padding = rect.width * 0.25
         point1 = (rect.left + padding, rect.top + padding)
         point2 = (rect.left + padding, rect.bottom - padding)
@@ -141,6 +148,7 @@ class Interface:
         pygame.draw.polygon(self.win, WHITE, [point1, point2, point3])
 
     def draw_settings_text(self, rect):
+        # Dibuja el icono de ajustes
         icon_path = os.path.join("images", "settings.png")
         try:
             icon = pygame.image.load(icon_path).convert_alpha()
@@ -155,11 +163,13 @@ class Interface:
             self.win.blit(text, text_rect)
 
     def round_corners(self, img, r):
+        # Redondea las esquinas de una superficie
         mask = pygame.Surface(img.get_size(), pygame.SRCALPHA)
         pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=r)
         img.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
 
     def draw_legal_moves_highlights(self, legal_moves):
+        # Dibuja los círculos para las jugadas legales
         if not legal_moves:
             return
 
@@ -378,6 +388,7 @@ class Interface:
             self.victory_sound.play()
 
     def draw_coordinates(self):
+        # Dibuja letras y números alrededor del tablero (a–h y 1–8)
         h = self.win.get_size()[1]
         margin = h * self.b_margin
         square_size = h * self.b_size / 8
@@ -401,6 +412,7 @@ class Interface:
             self.win.blit(label, (x, y))
 
     def update(self, positions, legal_moves=None, move_log=None, show_settings=False):
+        # Actualiza la pantalla en cada fotograma
         self.win.fill(BLACK)
         self.draw_board()
         self.draw_pieces(positions)
