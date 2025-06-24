@@ -377,6 +377,29 @@ class Interface:
             pygame.mixer.stop()
             self.victory_sound.play()
 
+    def draw_coordinates(self):
+        h = self.win.get_size()[1]
+        margin = h * self.b_margin
+        square_size = h * self.b_size / 8
+
+        font = pygame.font.SysFont("Arial", int(square_size * 0.25), bold=True)
+        files = "abcdefgh"
+        ranks = "87654321"
+
+        # Dibujar letras (a–h) abajo
+        for i in range(8):
+            label = font.render(files[i], True, WHITE)
+            x = margin + i * square_size + square_size / 2 - label.get_width() / 2
+            y = margin + 8 * square_size + 2
+            self.win.blit(label, (x, y))
+
+        # Dibujar números (1–8) izquierda
+        for i in range(8):
+            label = font.render(ranks[i], True, WHITE)
+            x = margin - label.get_width() - 4
+            y = margin + i * square_size + square_size / 2 - label.get_height() / 2
+            self.win.blit(label, (x, y))
+
     def update(self, positions, legal_moves=None, move_log=None, show_settings=False):
         self.win.fill(BLACK)
         self.draw_board()
@@ -388,4 +411,6 @@ class Interface:
             self.draw_legal_moves_highlights(legal_moves)
         if show_settings:
             self.draw_settings_panel()
+        if self.start_pressed:
+            self.draw_coordinates()
         pygame.display.flip()
