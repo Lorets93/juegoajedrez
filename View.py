@@ -498,7 +498,7 @@ class Interface:
                 img = pygame.transform.smoothscale(piece_image, (button_size, button_size))
                 self.win.blit(img, rect)
 
-        # Muestra todo en pantalla
+        # Muestratodo en pantalla
         pygame.display.flip()
 
         # Espera a que el jugador haga clic en una de las opciones
