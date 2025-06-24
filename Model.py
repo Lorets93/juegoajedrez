@@ -108,6 +108,21 @@ class Board:
         }
         return piece_classes[name](name, color)
 
+    def promote_pawn(self, piece_key, position, new_piece):
+        """
+        Reemplaza un peón que ha alcanzado el final del tablero por una nueva pieza (reina, torre, etc.).
+        """
+        # Verifica si la posición contiene el peón original
+        if piece_key in self.current_positions and position in self.current_positions[piece_key]:
+            # Elimina el peón
+            self.current_positions[piece_key].remove(position)
+            # Crea la clave de la nueva pieza, manteniendo el color original
+            new_key = f"{new_piece}_{piece_key[-1]}"
+            # Añade la nueva pieza en esa posición
+            if new_key not in self.current_positions:
+                self.current_positions[new_key] = []
+            self.current_positions[new_key].append(position)
+
 
 def pos_to_notation(pos):
     # Convierte una posición (col, row) en notación tipo 'e4'

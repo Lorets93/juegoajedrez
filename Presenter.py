@@ -5,6 +5,10 @@ import View
 # Constantes para el tamaño del tablero
 BOARD_SIZE_RATIO = 0.9
 BOARD_MARGIN_RATIO = (1 - BOARD_SIZE_RATIO) / 2
+SCROLL_UP_EVENT = pygame.USEREVENT + 1
+SCROLL_DOWN_EVENT = pygame.USEREVENT + 2
+
+
 
 class ChessPresenter:
     def __init__(self, win):
@@ -54,6 +58,13 @@ class ChessPresenter:
 
     def handle_click(self, pos):
         # Gestiona los clics del usuario: botones, tablero o ajustes
+        # Scroll de movimientos
+        if hasattr(self.view, "scroll_up_button") and self.view.scroll_up_button.collidepoint(pos):
+            self.scroll_moves(-1)
+            return
+        if hasattr(self.view, "scroll_down_button") and self.view.scroll_down_button.collidepoint(pos):
+            self.scroll_moves(1)
+            return
 
         # Botón "Start"
         if self.view.start_button_rect and self.view.start_button_rect.collidepoint(pos):
@@ -65,7 +76,7 @@ class ChessPresenter:
         # Botón "Settings"
         if self.view.settings_button_rect and self.view.settings_button_rect.collidepoint(pos):
             self.view.settings_pressed = True
-            self.view.start_pressed = False
+            # NO tocar start_pressed: que se mantenga si ya se había presionado antes
             self.settings_open = not self.settings_open
             return
 
@@ -113,6 +124,20 @@ class ChessPresenter:
                 move_str = f"{start_not} -> {end_not}"
 
                 self.model.move_piece(self.selected_piece, self.selected_pos, sq)
+                # Verificar si es una promoción de peón
+                # Verificar si es una promoción de peón
+                if self.selected_piece.startswith("pawn"):
+                    _, color = self.selected_piece.split("_")
+                    promotion_row = 0 if color == "w" else 7
+                    # Si el peón ha llegado al final del tablero
+                    if sq[1] == promotion_row:
+                        # Mostrar ventana para elegir la nueva pieza
+                        choice = self.view.display_promotion_choice(color)
+                        if choice:
+                            # Reemplazar el peón por la nueva pieza elegida
+                            self.model.promote_pawn(self.selected_piece, sq, choice)
+                            self.piece_objects = self.load_piece_objects()  # Recargar objetos de piezas
+
                 self.view.play_move_sound()
                 self.move_log.append(move_str)
 
@@ -147,6 +172,30 @@ class ChessPresenter:
         # Permite hacer scroll en el registro de movimientos
         self.view.scroll_offset += direction
         self.view.scroll_offset = max(0, min(self.view.scroll_offset, self.view.max_scroll_offset))
+
+    def handle_scroll_buttons(self, pos, pressed):
+        if not self.view.up_scroll_rect or not self.view.down_scroll_rect:
+            return
+
+        if self.view.up_scroll_rect.collidepoint(pos):
+            if pressed:
+                pygame.time.set_timer(SCROLL_UP_EVENT, 100)
+            else:
+                pygame.time.set_timer(SCROLL_UP_EVENT, 0)
+
+        elif self.view.down_scroll_rect.collidepoint(pos):
+            if pressed:
+                pygame.time.set_timer(SCROLL_DOWN_EVENT, 100)
+            else:
+                pygame.time.set_timer(SCROLL_DOWN_EVENT, 0)
+
+    def handle_mouse_event(self, event, down):
+        pos = event.pos
+        if down:
+            self.handle_click(pos)
+            self.handle_scroll_buttons(pos, pressed=True)
+        else:
+            self.handle_scroll_buttons(pos, pressed=False)
 
     def reset_game(self):
         # Reinicia la partida

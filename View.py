@@ -44,6 +44,8 @@ class Interface:
         # Scroll en historial de movimientos
         self.scroll_offset = 0
         self.max_scroll_offset = 0
+        self.up_scroll_rect = None
+        self.down_scroll_rect = None
 
     def load_piece_images(self):
         # Carga las imágenes de cada tipo de pieza
@@ -244,10 +246,35 @@ class Interface:
         x = sdb_posx + sdb_dimx * self.movestext_x
         y = sdb_posy + sdb_dimy * self.movestext_y
 
+        # Encabezado
+        title_text = "Lista de movimientos" if self.language == "es" else "Move List"
+        title_surface = self.font_move.render(title_text, True, WHITE)
+        self.win.blit(title_surface, (x, y - 30))
+
         for i, move in enumerate(displayed, start=self.scroll_offset + 1):
             text = self.font_move.render(f"{i}. {move}", True, TEXT_COLOR)
             self.win.blit(text, (x, y))
             y += line_height
+
+        # Botones de scroll ▲▼
+        btn_width = 30
+        btn_height = 30
+        margin = 10
+        btn_x = sdb_posx + sdb_dimx - btn_width - margin
+        up_y = sdb_posy + sdb_dimy * self.movestext_y - 35
+        down_y = up_y + max_visible_lines * line_height + 5
+
+        self.scroll_up_button = pygame.Rect(btn_x, up_y, btn_width, btn_height)
+        self.scroll_down_button = pygame.Rect(btn_x, down_y, btn_width, btn_height)
+
+        pygame.draw.rect(self.win, DARK, self.scroll_up_button, border_radius=4)
+        pygame.draw.rect(self.win, DARK, self.scroll_down_button, border_radius=4)
+
+        arrow_font = pygame.font.SysFont("Arial", 22, bold=True)
+        up_arrow = arrow_font.render("▲", True, WHITE)
+        down_arrow = arrow_font.render("▼", True, WHITE)
+        self.win.blit(up_arrow, up_arrow.get_rect(center=self.scroll_up_button.center))
+        self.win.blit(down_arrow, down_arrow.get_rect(center=self.scroll_down_button.center))
 
     def draw_settings_panel(self):
         w, h = self.win.get_size()
@@ -426,3 +453,66 @@ class Interface:
         if self.start_pressed:
             self.draw_coordinates()
         pygame.display.flip()
+
+    def display_promotion_choice(self, color):
+        """
+        Muestra una ventana emergente para que el jugador elija la pieza con la que desea promover su peón.
+        Devuelve el nombre de la pieza elegida (queen, rook, bishop, knight).
+        """
+        w, h = self.win.get_size()
+        panel_width = 300
+        panel_height = 150
+        panel_x = (w - panel_width) // 2
+        panel_y = (h - panel_height) // 2
+
+        # Crea fondo translúcido
+        overlay = pygame.Surface((w, h), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 150))
+        self.win.blit(overlay, (0, 0))
+
+        # Crea el panel central
+        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        panel.fill((40, 40, 40, 230))
+        self.round_corners(panel, 12)
+        self.win.blit(panel, (panel_x, panel_y))
+
+        # Título del panel
+        font = pygame.font.SysFont("Arial", 24, bold=True)
+        label = "Elige pieza" if self.language == "es" else "Choose piece"
+        text = font.render(label, True, WHITE)
+        self.win.blit(text, (panel_x + 20, panel_y + 10))
+
+        # Lista de piezas disponibles para promoción
+        pieces = ["queen", "rook", "bishop", "knight"]
+        buttons = []
+        button_size = 60
+        spacing = 10
+        start_x = panel_x + (panel_width - (len(pieces) * (button_size + spacing))) // 2
+
+        # Dibuja cada botón con su imagen correspondiente
+        for i, p in enumerate(pieces):
+            rect = pygame.Rect(start_x + i * (button_size + spacing), panel_y + 50, button_size, button_size)
+            buttons.append((p, rect))
+            piece_image = self.piece_images.get(f"{p}_{color}")
+            if piece_image:
+                img = pygame.transform.smoothscale(piece_image, (button_size, button_size))
+                self.win.blit(img, rect)
+
+        # Muestra todo en pantalla
+        pygame.display.flip()
+
+        # Espera a que el jugador haga clic en una de las opciones
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    for p, rect in buttons:
+                        if rect.collidepoint(event.pos):
+                            return p  # Devuelve la pieza elegida
+
+        return None  # Si no se elige ninguna (no debería pasar)
+
+
