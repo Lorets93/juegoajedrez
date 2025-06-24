@@ -94,7 +94,10 @@ class Interface:
             font_size = min(int(sdb_dimy * 0.15), int(sdb_dimx * 0.12))
             dynamic_font = pygame.font.SysFont("Arial", font_size, bold=True)
 
-            lines = ["JUGUEMOS", "A", "AJEDREZ"] if self.language == "es" else ["LET'S", "PLAY", "CHESS"]
+            if self.language == "es":
+                lines = ["AJEDREZ"] if self.start_pressed else ["JUGUEMOS", "A", "AJEDREZ"]
+            else:
+                lines = ["CHESS"] if self.start_pressed else ["LET'S", "PLAY", "CHESS"]
             for i, line in enumerate(lines):
                 text = dynamic_font.render(line, True, WHITE)
                 rect = text.get_rect(center=(sdb_posx + sdb_dimx / 2, sdb_posy + sdb_dimy * 0.1 + i * font_size))
