@@ -50,14 +50,21 @@ class ChessPresenter:
         return None
 
     def handle_click(self, pos):
+        # Botón "Start"
         if self.view.start_button_rect and self.view.start_button_rect.collidepoint(pos):
+            self.view.start_pressed = True
+            self.view.settings_pressed = False
             self.reset_game()
             return
 
+        # Botón "Settings"
         if self.view.settings_button_rect and self.view.settings_button_rect.collidepoint(pos):
+            self.view.settings_pressed = True
+            self.view.start_pressed = False
             self.settings_open = not self.settings_open
             return
 
+        # Ajustes abiertos
         if self.settings_open:
             action = self.view.handle_settings_click(pos)
             if action == "toggle_sound":
@@ -70,6 +77,7 @@ class ChessPresenter:
                 self.view.display_help()
             elif action == "close_settings":
                 self.settings_open = False
+                self.view.settings_pressed = False
             return
 
         if not self.game_started or self.view.game_over:

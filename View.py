@@ -56,7 +56,6 @@ class Interface:
         b_pos = h * self.b_margin
         b_size = h * self.b_size
 
-        # Elige la imagen según el tema
         board_path = "images/board_dark.png" if self.dark_theme else "images/board_light.png"
         board_img = pygame.image.load(board_path).convert_alpha()
         board = pygame.transform.scale(board_img, (b_size, b_size))
@@ -95,10 +94,7 @@ class Interface:
             font_size = min(int(sdb_dimy * 0.15), int(sdb_dimx * 0.12))
             dynamic_font = pygame.font.SysFont("Arial", font_size, bold=True)
 
-            if self.language == "es":
-                lines = ["JUGUEMOS", "A", "AJEDREZ"]
-            else:
-                lines = ["LET'S", "PLAY", "CHESS"]
+            lines = ["JUGUEMOS", "A", "AJEDREZ"] if self.language == "es" else ["LET'S", "PLAY", "CHESS"]
             for i, line in enumerate(lines):
                 text = dynamic_font.render(line, True, WHITE)
                 rect = text.get_rect(center=(sdb_posx + sdb_dimx / 2, sdb_posy + sdb_dimy * 0.1 + i * font_size))
@@ -112,10 +108,14 @@ class Interface:
         b_dim = h * 0.08
         b_posx = sdb_posx - h * 0.0875
         b_posy_up = h * 0.42
-        b_posy_down = b_posy_up + b_dim + h * 0.045  # 0.045 da el mismo espacio proporcional entre botones
+        b_posy_down = b_posy_up + b_dim + h * 0.045
 
-        self.start_button_rect = pygame.Rect(b_posx, b_posy_up, b_dim, b_dim)
-        self.settings_button_rect = pygame.Rect(b_posx, b_posy_down, b_dim, b_dim)
+        offset = 3  # efecto de empuje
+        start_offset = offset if self.start_pressed else 0
+        settings_offset = offset if self.settings_pressed else 0
+
+        self.start_button_rect = pygame.Rect(b_posx, b_posy_up + start_offset, b_dim, b_dim)
+        self.settings_button_rect = pygame.Rect(b_posx, b_posy_down + settings_offset, b_dim, b_dim)
 
         self.create_button(self.start_button_rect, "", self.start_pressed)
         self.create_button(self.settings_button_rect, "", self.settings_pressed)
@@ -141,11 +141,9 @@ class Interface:
         icon_path = os.path.join("images", "settings.png")
         try:
             icon = pygame.image.load(icon_path).convert_alpha()
-            # Escala la imagen para que encaje dentro del botón con un pequeño margen
             icon = pygame.transform.smoothscale(icon, (rect.width - 8, rect.height - 8))
             self.win.blit(icon, (rect.x + 4, rect.y + 4))
         except pygame.error:
-            # Fallback en caso de error (imagen no encontrada o corrupta)
             font_size = int(rect.height * 0.4)
             font = pygame.font.SysFont("Arial", font_size, bold=True)
             fallback_text = "⚙"
@@ -173,31 +171,25 @@ class Interface:
 
     def display_message(self, message, color, font_size=36):
         w, h = self.win.get_size()
-
-        # Panel central estilo botón
         panel_width = w * 0.5
         panel_height = h * 0.2
         panel_x = (w - panel_width) // 2
         panel_y = (h - panel_height) // 2
 
-        # Fondo semi-transparente
         overlay = pygame.Surface((w, h), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 120))
         self.win.blit(overlay, (0, 0))
 
-        # Panel
         panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
         panel.fill((40, 40, 40, 230))
         self.round_corners(panel, 12)
         self.win.blit(panel, (panel_x, panel_y))
 
-        # Texto principal
         font = pygame.font.SysFont("Arial", font_size, bold=True)
         text = font.render(message, True, color)
         rect = text.get_rect(center=(w // 2, panel_y + panel_height // 2 - 20))
         self.win.blit(text, rect)
 
-        # Botón cerrar
         button_width = 120
         button_height = 40
         close_rect = pygame.Rect(
@@ -216,7 +208,6 @@ class Interface:
 
         pygame.display.flip()
 
-        # Esperar al clic
         waiting = True
         while waiting:
             for event in pygame.event.get():
@@ -263,7 +254,6 @@ class Interface:
 
         font = pygame.font.SysFont("Arial", 24, bold=True)
 
-        # Textos traducidos
         lang = self.language
         label_lang = "Idioma" if lang == "es" else "Language"
         label_sound = "Sonido" if lang == "es" else "Sound"
@@ -301,7 +291,6 @@ class Interface:
 
             self.settings_buttons[key] = rect
 
-        # Botón "Cerrar / Close"
         close_y = start_y + len(options) * (button_height + spacing) + 10
         close_rect = pygame.Rect((w - button_width) // 2, close_y, button_width, button_height)
         pygame.draw.rect(self.win, (100, 40, 40), close_rect, border_radius=8)
@@ -346,7 +335,6 @@ class Interface:
             text = font.render(line, True, WHITE)
             self.win.blit(text, (panel_x + 30, panel_y + 30 + i * 30))
 
-        # Botón cerrar
         button_width = 100
         button_height = 40
         close_rect = pygame.Rect(
@@ -361,7 +349,6 @@ class Interface:
 
         pygame.display.flip()
 
-        # Esperar clic en "Cerrar"
         waiting = True
         while waiting:
             for event in pygame.event.get():
@@ -374,7 +361,7 @@ class Interface:
 
     def play_move_sound(self):
         if self.sound_on:
-            pygame.mixer.stop()  # Para evitar superposición
+            pygame.mixer.stop()
             self.move_sound.play()
 
     def play_check_sound(self):
