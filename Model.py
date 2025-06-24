@@ -1,5 +1,8 @@
+
+# Contiene la lógica del tablero y las piezas. No usa interfaz gráfica.
 class Board:
     def __init__(self):
+        # Define las posiciones iniciales de cada pieza
         self.initial_positions = {
             "rook_b": [(0, 0), (7, 0)],
             "knight_b": [(1, 0), (6, 0)],
@@ -19,7 +22,7 @@ class Board:
         self.winner = None
 
     def move_piece(self, piece_key, start_pos, end_pos, simulate=False):
-        # Eliminar de posición inicial
+        # Mueve una pieza y actualiza las posiciones.
         if start_pos in self.current_positions[piece_key]:
             self.current_positions[piece_key].remove(start_pos)
 
@@ -36,11 +39,11 @@ class Board:
                     positions.remove(end_pos)
                 break
 
-        # Añadir a nueva posición
         if not simulate:
             self.current_positions[piece_key].append(end_pos)
 
     def get_all_pieces(self):
+        # Devuelve una lista de todas las piezas en el tablero
         all_pieces = []
         for piece, positions in self.current_positions.items():
             for pos in positions:
@@ -48,11 +51,13 @@ class Board:
         return all_pieces
 
     def get_king_position(self, color):
+        # Devuelve la posición actual del rey del color indicado
         key = f"king_{color}"
         positions = self.current_positions.get(key, [])
         return positions[0] if positions else None
 
     def is_king_in_check(self, color):
+        # Verifica si el rey está en jaque
         king_pos = self.get_king_position(color)
         if not king_pos:
             return False
@@ -68,6 +73,7 @@ class Board:
         return False
 
     def is_checkmate(self, color):
+        # Verifica si el jugador está en jaque mate
         if not self.is_king_in_check(color):
             return False
 
@@ -85,11 +91,13 @@ class Board:
         return True
 
     def copy(self):
+        # Crea una copia del estado actual del tablero
         new_board = Board()
         new_board.current_positions = {k: list(v) for k, v in self.current_positions.items()}
         return new_board
 
     def get_piece_object(self, name, color):
+        # Devuelve una instancia de clase de pieza (ej. Rook, Queen...)
         piece_classes = {
             "pawn": Pawn,
             "knight": Knight,
@@ -102,10 +110,11 @@ class Board:
 
 
 def pos_to_notation(pos):
+    # Convierte una posición (col, row) en notación tipo 'e4'
     files = "abcdefgh"
     return f"{files[pos[0]]}{8 - pos[1]}"
 
-
+# Clase base para todas las piezas
 class Piece:
     def __init__(self, name, color):
         self.name = name
@@ -114,7 +123,7 @@ class Piece:
     def get_moves(self, pos, board, simulate=False):
         return []
 
-
+# Clase para los peones
 class Pawn(Piece):
     def get_moves(self, pos, board, simulate=False):
         moves = []
@@ -146,7 +155,7 @@ class Pawn(Piece):
                 return True
         return False
 
-
+# Clase para los caballos
 class Knight(Piece):
     def get_moves(self, pos, board, simulate=False):
         moves = []
@@ -167,7 +176,7 @@ class Knight(Piece):
                 return True
         return False
 
-
+# Clase para los alfiles
 class Bishop(Piece):
     def get_moves(self, pos, board, simulate=False):
         return self.get_sliding_moves(pos, board, [(1, 1), (1, -1), (-1, 1), (-1, -1)])
@@ -201,12 +210,12 @@ class Bishop(Piece):
                 return True
         return False
 
-
+# Clase para las torres(hereda la lógica del alfil pero cambia las direcciones)
 class Rook(Bishop):
     def get_moves(self, pos, board, simulate=False):
         return self.get_sliding_moves(pos, board, [(0, 1), (1, 0), (0, -1), (-1, 0)])
 
-
+# Clase para la reina (combinación de torre y alfil)
 class Queen(Bishop):
     def get_moves(self, pos, board, simulate=False):
         return self.get_sliding_moves(
@@ -215,7 +224,7 @@ class Queen(Bishop):
             [(1, 1), (1, -1), (-1, 1), (-1, -1), (0, 1), (1, 0), (0, -1), (-1, 0)]
         )
 
-
+# Clase para el rey
 class King(Piece):
     def get_moves(self, pos, board, simulate=False):
         moves = []
